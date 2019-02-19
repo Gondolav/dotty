@@ -76,6 +76,7 @@ bench/compile.txt
 *.dotty-ide-version
 
 *.decompiled.out
-
+before-pickling.txt
+after-pickling.txt
 # The vscode app for testing
 vscode-dotty/.vscode-test
