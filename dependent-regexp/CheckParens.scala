@@ -1,15 +1,15 @@
-object ListIntConcat {
+object ListCharConcat {
   sealed trait List {
     dependent def ++(that: List): List =
       if (this.isInstanceOf[Nil.type]) that
       else Cons(this.asInstanceOf[Cons].head, this.asInstanceOf[Cons].tail ++ that)
   }
   dependent case object Nil extends List
-  dependent case class Cons(head: Int, tail: List) extends List
+  dependent case class Cons(head: Char, tail: List) extends List
 }
 
 object DependentRegexp {
-    import ListIntConcat._
+    import ListCharConcat._
 
     dependent private def check(cs: List, opened: Int): Boolean = {
         if (cs.isInstanceOf[Nil.type]) opened == 0
@@ -19,7 +19,7 @@ object DependentRegexp {
         else check(cs.asInstanceOf[Cons].tail, opened)
     }
 
-    // Dependent function definition inside another function doesn't work
+    // Dependent function definition inside another function doesn't work, nor defined parameters
     dependent def checkParens(s: List): Boolean = {
         check(s, 0)
     }
