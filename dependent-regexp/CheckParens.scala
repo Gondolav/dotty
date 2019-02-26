@@ -8,21 +8,18 @@ object ListCharConcat {
   dependent case class Cons(head: Char, tail: List) extends List
 }
 
-object DependentRegexp {
+object CheckParens {
     import ListCharConcat._
 
-    dependent private def check(cs: List, opened: Int): Boolean = {
+    dependent private def check(cs: List, opened: Int): Boolean =
         if (cs.isInstanceOf[Nil.type]) opened == 0
         else if (cs.asInstanceOf[Cons].head == '(') check(cs.asInstanceOf[Cons].tail, opened + 1)
         else if (cs.asInstanceOf[Cons].head == ')' && opened < 1) false
         else if (cs.asInstanceOf[Cons].head == ')') check(cs.asInstanceOf[Cons].tail, opened - 1)
         else check(cs.asInstanceOf[Cons].tail, opened)
-    }
 
-    // Dependent function definition inside another function doesn't work, nor defined parameters
-    dependent def checkParens(s: List): Boolean = {
-        check(s, 0)
-    }
+    // Dependent function definition inside another function doesn't work, nor named parameters
+    dependent def checkParens(s: List): Boolean = check(s, 0)
 
     val balancedEmpty: true = checkParens(Nil)
     val balanced1: true = checkParens(Cons('(', Cons('(', Cons(')', Cons(')', Nil)))))
