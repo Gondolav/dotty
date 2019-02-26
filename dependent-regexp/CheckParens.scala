@@ -24,6 +24,7 @@ object CheckParens {
     val balancedEmpty: true = checkParens(Nil)
     val balanced1: true = checkParens(Cons('(', Cons('(', Cons(')', Cons(')', Nil)))))
     val balanced2: true = checkParens(Cons('a', Cons('(', Cons('s', Cons('(', Cons('v', Cons('v', Cons(')', Cons('d', Cons(')', Cons('f', Cons('f', Nil))))))))))))
+    val balanced3: true = checkParens(Cons('(', Cons(')', Cons('(', Cons(')', Nil)))))
 
     val notBalanced1: false = checkParens(Cons('(', Cons('(', Cons(')', Nil))))
     val notBalanced2: false = checkParens(Cons('(', Cons('(', Cons(')', Cons(')', Cons(')', Cons('(', Nil)))))))
