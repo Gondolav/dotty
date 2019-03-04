@@ -1,4 +1,5 @@
 object Regexp {
+    import scala.collection.mutable.ListBuffer
 
     sealed abstract class Type
     case object Str extends Type {
@@ -15,7 +16,7 @@ object Regexp {
         // require(checkParens(s), "The groups are not well defined")
         val groups = findGroups(s)
 
-        val groupsTypes: List[Type] = Nil
+        //val groupsTypes: List[Type] = Nil
 
         //for (group <- groups.reverse) {
             if (groups(0).length == 1 && groups(0)(0).isLetter) return null.asInstanceOf[String => Char]
@@ -31,16 +32,16 @@ object Regexp {
         // require(checkParens(s), "The groups are not well defined")
         val groups = findGroups(s)
 
-        var groupsTypes: Array[Type] = Array.empty
+        var groupsTypes: ListBuffer[Type] = ListBuffer()
 
         for (group <- groups) {
-            if (group.length == 1 && group(0).isLetter) groupsTypes = groupsTypes :+ Chr
-            else if (group.forall(c => c.isDigit)) groupsTypes = groupsTypes :+ Integ
-            else if (group.contains('[') || group.contains(']')) groupsTypes = handleCharacterClasses2(group, groupsTypes)
-            else groupsTypes = groupsTypes :+ Str
+            if (group.length == 1 && group(0).isLetter) groupsTypes += Chr
+            else if (group.forall(c => c.isDigit)) groupsTypes += Integ
+            else if (group.contains('[') || group.contains(']')) handleCharacterClasses2(group, groupsTypes)
+            else groupsTypes += Str
         }
 
-        groupsTypes.foreach(println)
+        groupsTypes.toList.foreach(println)
     }
 
     private def findGroups(s: String): Array[String] = s.split(Array('(', ')')).filter(_.nonEmpty)
@@ -65,11 +66,11 @@ object Regexp {
         }
     }
 
-    private def handleCharacterClasses2(s: String, groupsTypes: Array[Type]): Array[Type] = {
+    private def handleCharacterClasses2(s: String, groupsTypes: ListBuffer[Type]): Unit = {
         //require(checkBrackets(s), "The character class is not well defined")
         val classes = findClasses(s)
 
-        if (classes.length == 1 && classes(0).split('-').forall(s => s forall(c => c.isDigit))) return groupsTypes :+ Chr
+        if (classes.length == 1 && classes(0).split('-').forall(s => s forall(c => c.isDigit))) groupsTypes += Chr
 
         var t: Type = Str
 
@@ -78,8 +79,8 @@ object Regexp {
         }
 
         (t: @unchecked) match {
-            case Str => return groupsTypes :+ Str
-            case Integ => return groupsTypes :+ Integ
+            case Str => groupsTypes += Str
+            case Integ => groupsTypes += Integ
         }
     }
 
