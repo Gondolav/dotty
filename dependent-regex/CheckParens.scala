@@ -1,3 +1,5 @@
+package dependent-regex
+
 object ListCharConcat {
   sealed trait List {
     dependent def ++(that: List): List =
