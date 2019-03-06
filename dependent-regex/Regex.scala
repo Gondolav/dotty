@@ -1,29 +1,28 @@
 object ListCharConcat {
-  sealed trait List {
-    dependent def ++(that: List): List =
-      if (this.isInstanceOf[Nil.type]) that
-      else Cons(this.asInstanceOf[Cons].head, this.asInstanceOf[Cons].tail ++ that)
+    sealed trait List {
+        dependent def ++(that: List): List =
+            if (this.isInstanceOf[Nil.type]) that
+            else Cons(this.asInstanceOf[Cons].head, this.asInstanceOf[Cons].tail ++ that)
 
-    dependent def length: Int =
-        if (this.isInstanceOf[Nil.type]) 0
-        else 1 + this.asInstanceOf[Cons].tail.length
-  }
+            dependent def length: Int =
+                if (this.isInstanceOf[Nil.type]) 0
+                else 1 + this.asInstanceOf[Cons].tail.length
+            }
 
-  dependent case object Nil extends List
-  dependent case class Cons(head: Char, tail: List) extends List
-
-  val x : {1} = Cons('a', Nil).length
-}
+            dependent case object Nil extends List
+            dependent case class Cons(head: Char, tail: List) extends List
+        }
 
 object CheckParens {
     import ListCharConcat._
 
-    dependent private def check(cs: List, opened: Int, open: Char, close: Char): Boolean =
+    dependent private def check(cs: List, opened: Int, open: Char, close: Char): Boolean = {
         if (cs.isInstanceOf[Nil.type]) opened == 0
         else if (cs.asInstanceOf[Cons].head == open) check(cs.asInstanceOf[Cons].tail, opened + 1, open, close)
         else if (cs.asInstanceOf[Cons].head == close && opened < 1) false
         else if (cs.asInstanceOf[Cons].head == close) check(cs.asInstanceOf[Cons].tail, opened - 1, open, close)
         else check(cs.asInstanceOf[Cons].tail, opened, open, close)
+    }
 
     dependent def checkParens(s: List): Boolean = check(s, 0, '(', ')')
 
@@ -55,29 +54,47 @@ object Regex {
         override def toString(): String = "Char"
     }
 
-    dependent def compileRegex(s: List): Any = compile(s, Str)
+    dependent def compileRegex(s: List): Any = compile(s, Str, 0, false, 0)
 
-    dependent private def compile(s: List, currType: Type): Any = {
-        if (!checkParens(s)) compile(s, currType)
+    dependent private def compile(s: List, currType: Type, chars: Int, charClass: Boolean, classes: Int): Any = {
+        if (!checkParens(s)) compile(s, currType, chars, charClass, classes)
 
-        if (s.isInstanceOf[Nil.type]) returnType(currType)
-        else if (s.asInstanceOf[Cons].head == '(' || s.asInstanceOf[Cons].head == ')') compile(s.asInstanceOf[Cons].tail, currType)
-        else if (!isDigit(s.asInstanceOf[Cons].head) && s.asInstanceOf[Cons].tail.asInstanceOf[Cons].head == ')') null.asInstanceOf[String => Char]
-        else if (isDigit(s.asInstanceOf[Cons].head)) compile(s.asInstanceOf[Cons].tail, Integ)
-        else compile(s.asInstanceOf[Cons].tail, Str)
+        if (s.isInstanceOf[Nil.type]) returnType(currType, chars)
+        else if (charClass) {
+            if (isDigit(s.asInstanceOf[Cons].head)) compile(s.asInstanceOf[Cons].tail, Integ, chars, charClass, classes)
+            else if (s.asInstanceOf[Cons].head == '-') compile(s.asInstanceOf[Cons].tail, currType, chars, charClass, classes)
+            else if (s.asInstanceOf[Cons].head == ']') {
+                if (classes == 1 && currType.isInstanceOf[Str.type]) compile(s.asInstanceOf[Cons].tail, Chr, chars, false, classes)
+                else compile(s.asInstanceOf[Cons].tail, currType, chars, false, classes)
+            }
+            else compile(s.asInstanceOf[Cons].tail, Str, chars, charClass, classes)
+        } else {
+            if (s.asInstanceOf[Cons].head == '[') {
+                if (!checkBrackets(s)) compile(s, currType, chars, charClass, classes)
+                compile(s.asInstanceOf[Cons].tail, currType, chars, true, classes + 1)
+            }
+            else if (s.asInstanceOf[Cons].head == '(' || s.asInstanceOf[Cons].head == ')') compile(s.asInstanceOf[Cons].tail, currType, chars, charClass, classes)
+            else if (isDigit(s.asInstanceOf[Cons].head)) compile(s.asInstanceOf[Cons].tail, Integ, chars, charClass, classes)
+            else compile(s.asInstanceOf[Cons].tail, Str, chars + 1, charClass, classes)
+        }
     }
 
     dependent private def isDigit(c: Char): Boolean = '0' <= c && c <= '9'
 
-    dependent private def returnType(t: Type) =
-        if (t.isInstanceOf[Str.type]) null.asInstanceOf[String => String]
+    dependent private def returnType(t: Type, chars: Int) = {
+        if (chars == 1) null.asInstanceOf[String => Char]
+        else if (t.isInstanceOf[Str.type]) null.asInstanceOf[String => String]
+        else if (t.isInstanceOf[Chr.type]) null.asInstanceOf[String => Char]
         else null.asInstanceOf[String => Int]
+    }
 
+    //val x = compileRegex(Cons('(', Nil))
     val x1: String => String = compileRegex(Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Nil))))))))
     val x2: String => Char = compileRegex(Cons('(', Cons('a', Cons(')', Nil))))
     val x3: String => Int = compileRegex(Cons('(', Cons('1', Cons('2', Cons('3', Nil)))))
 
-    // val x4: String => String = compileRegex("[a-z][a-z]")
-    // val x5: String => Int = compileRegex("[0-9]")
-    // val x6: String => Char = compileRegex("[A-Z]")
+    val x4: String => String = compileRegex(Cons('(', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons(')', Nil)))))))))))))
+    val x5: String => Int = compileRegex(Cons('(', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons(')', Nil)))))))))))))
+    val x6: String => Int = compileRegex(Cons('(', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons(')', Nil))))))))
+    val x7: String => Char = compileRegex(Cons('(', Cons('[', Cons('A', Cons('-', Cons('Z', Cons(']', Cons(')', Nil))))))))
 }
