@@ -25,6 +25,7 @@ List(25, 30, 20, 43, 44)
         sum = sum.+(v.apply(i$2).*(a.apply(i).apply(i$2)))
         i$2 = i$2.+(1)
       }
+
       (sum: scala.Int)
     })
     i = i.+(1)
@@ -45,9 +46,7 @@ List(25, 30, 20, 43, 44)
 
 {
   val arr: scala.Array[scala.Array[scala.Int]] = {
-    val array: scala.Array[scala.Array[scala.Int]] = dotty.runtime.Arrays.newGenericArray[scala.Array[scala.Int]](5)({
-      scala.reflect.ClassTag.apply[scala.Array[scala.Int]](scala.Predef.classOf[scala.Array[scala.Int]])
-    })
+    val array: scala.Array[scala.Array[scala.Int]] = dotty.runtime.Arrays.newGenericArray[scala.Array[scala.Int]](5)(scala.reflect.ClassTag.apply[scala.Array[scala.Int]](scala.Predef.classOf[scala.Array[scala.Int]]))
     array.update(0, {
       val array$2: scala.Array[scala.Int] = new scala.Array[scala.Int](5)
       array$2.update(0, 5)
@@ -95,7 +94,6 @@ List(25, 30, 20, 43, 44)
     })
     array
   }
-
   ((vout: scala.Array[scala.Int], v: scala.Array[scala.Int]) => {
     if (5.!=(vout.length)) throw new scala.IndexOutOfBoundsException("5") else ()
     if (5.!=(v.length)) throw new scala.IndexOutOfBoundsException("5") else ()
@@ -111,9 +109,7 @@ List(25, 30, 20, 43, 44)
 
 {
   val arr: scala.Array[scala.Array[scala.Int]] = {
-    val array: scala.Array[scala.Array[scala.Int]] = dotty.runtime.Arrays.newGenericArray[scala.Array[scala.Int]](5)({
-      scala.reflect.ClassTag.apply[scala.Array[scala.Int]](scala.Predef.classOf[scala.Array[scala.Int]])
-    })
+    val array: scala.Array[scala.Array[scala.Int]] = dotty.runtime.Arrays.newGenericArray[scala.Array[scala.Int]](5)(scala.reflect.ClassTag.apply[scala.Array[scala.Int]](scala.Predef.classOf[scala.Array[scala.Int]]))
     array.update(0, {
       val array$2: scala.Array[scala.Int] = new scala.Array[scala.Int](5)
       array$2.update(0, 5)
@@ -161,7 +157,6 @@ List(25, 30, 20, 43, 44)
     })
     array
   }
-
   ((vout: scala.Array[scala.Int], v: scala.Array[scala.Int]) => {
     if (5.!=(vout.length)) throw new scala.IndexOutOfBoundsException("5") else ()
     if (5.!=(v.length)) throw new scala.IndexOutOfBoundsException("5") else ()
@@ -177,9 +172,7 @@ List(25, 30, 20, 43, 44)
 
 {
   val arr: scala.Array[scala.Array[scala.Int]] = {
-    val array: scala.Array[scala.Array[scala.Int]] = dotty.runtime.Arrays.newGenericArray[scala.Array[scala.Int]](5)({
-      scala.reflect.ClassTag.apply[scala.Array[scala.Int]](scala.Predef.classOf[scala.Array[scala.Int]])
-    })
+    val array: scala.Array[scala.Array[scala.Int]] = dotty.runtime.Arrays.newGenericArray[scala.Array[scala.Int]](5)(scala.reflect.ClassTag.apply[scala.Array[scala.Int]](scala.Predef.classOf[scala.Array[scala.Int]]))
     array.update(0, {
       val array$2: scala.Array[scala.Int] = new scala.Array[scala.Int](5)
       array$2.update(0, 5)
@@ -227,7 +220,6 @@ List(25, 30, 20, 43, 44)
     })
     array
   }
-
   ((vout: scala.Array[scala.Int], v: scala.Array[scala.Int]) => {
     if (5.!=(vout.length)) throw new scala.IndexOutOfBoundsException("5") else ()
     if (5.!=(v.length)) throw new scala.IndexOutOfBoundsException("5") else ()
@@ -241,6 +233,7 @@ List(25, 30, 20, 43, 44)
         sum = sum.+(v.apply(i).*(arr.apply(3).apply(i)))
         i = i.+(1)
       }
+
       (sum: scala.Int)
     })
     vout.update(4, v.apply(2).*(3).+(v.apply(4).*(7)))
@@ -270,6 +263,7 @@ List(25, 30, 20, 43, 44)
       }.apply(i)))
       i = i.+(1)
     }
+
     (sum: scala.Int)
   })
   vout.update(4, v.apply(2).*(3).+(v.apply(4).*(7)))
@@ -287,7 +281,6 @@ List(25, 30, 20, 43, 44)
     array.update(4, 5)
     array
   }
-
   ((vout: scala.Array[scala.Int], v: scala.Array[scala.Int]) => {
     if (5.!=(vout.length)) throw new scala.IndexOutOfBoundsException("5") else ()
     if (5.!=(v.length)) throw new scala.IndexOutOfBoundsException("5") else ()
@@ -301,6 +294,7 @@ List(25, 30, 20, 43, 44)
         sum = sum.+(v.apply(i).*(row.apply(i)))
         i = i.+(1)
       }
+
       (sum: scala.Int)
     })
     vout.update(4, v.apply(2).*(3).+(v.apply(4).*(7)))

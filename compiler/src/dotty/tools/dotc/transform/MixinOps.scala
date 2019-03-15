@@ -3,7 +3,7 @@ package transform
 
 import core._
 import Symbols._, Types._, Contexts._, DenotTransformers._, Flags._
-import util.Positions._
+import util.Spans._
 import SymUtils._
 import StdNames._, NameOps._
 import Decorators._
@@ -28,13 +28,13 @@ class MixinOps(cls: ClassSymbol, thisPhase: DenotTransformer)(implicit ctx: Cont
     res
   }
 
-  def superRef(target: Symbol, pos: Position = cls.pos): Tree = {
+  def superRef(target: Symbol, span: Span = cls.span): Tree = {
     val sup = if (target.isConstructor && !target.owner.is(Trait))
       Super(This(cls), tpnme.EMPTY, true)
     else
       Super(This(cls), target.owner.name.asTypeName, false, target.owner)
     //println(i"super ref $target on $sup")
-    ast.untpd.Select(sup.withPos(pos), target.name)
+    ast.untpd.Select(sup.withSpan(span), target.name)
       .withType(NamedType(sup.tpe, target))
     //sup.select(target)
   }
@@ -63,6 +63,7 @@ class MixinOps(cls: ClassSymbol, thisPhase: DenotTransformer)(implicit ctx: Cont
 
     def needsDisambiguation = competingMethods.exists(x=> !(x is Deferred)) // multiple implementations are available
     def hasNonInterfaceDefinition = competingMethods.exists(!_.owner.is(Trait)) // there is a definition originating from class
+    !meth.isConstructor &&
     meth.is(Method, butNot = PrivateOrAccessorOrDeferred) &&
     (meth.owner.is(Scala2x) || needsDisambiguation || hasNonInterfaceDefinition || needsJUnit4Fix(meth) ) &&
     isCurrent(meth)
@@ -70,28 +71,6 @@ class MixinOps(cls: ClassSymbol, thisPhase: DenotTransformer)(implicit ctx: Cont
 
   private def needsJUnit4Fix(meth: Symbol): Boolean = {
     meth.annotations.nonEmpty && JUnit4Annotations.exists(annot => meth.hasAnnotation(annot))
-  }
-
-  /** Get `sym` of the method that needs a forwarder
-    *  Method needs a forwarder in those cases:
-    *   - there is a trait that defines a primitive version of implemented polymorphic method.
-    *   - there is a trait that defines a polymorphic version of implemented primitive method.
-    */
-  def needsPrimitiveForwarderTo(meth: Symbol): Option[Symbol] = {
-    def hasPrimitiveMissMatch(tp1: Type, tp2: Type): Boolean = (tp1, tp2) match {
-      case (tp1: MethodicType, tp2: MethodicType) =>
-        hasPrimitiveMissMatch(tp1.resultType, tp2.resultType) ||
-        tp1.paramInfoss.flatten.zip(tp1.paramInfoss.flatten).exists(args => hasPrimitiveMissMatch(args._1, args._2))
-      case _ =>
-        def isPrimitiveOrValueClass(sym: Symbol): Boolean = sym.isPrimitiveValueClass || sym.isValueClass
-        isPrimitiveOrValueClass(tp1.typeSymbol) ^ isPrimitiveOrValueClass(tp2.typeSymbol)
-    }
-
-    def needsPrimitiveForwarder(m: Symbol): Boolean =
-      m.owner != cls && !m.is(Deferred) && hasPrimitiveMissMatch(meth.info, m.info)
-
-    if (!meth.is(Method | Deferred, butNot = PrivateOrAccessor) || meth.overriddenSymbol(cls).exists || needsForwarder(meth)) None
-    else competingMethodsIterator(meth).find(needsPrimitiveForwarder)
   }
 
   final val PrivateOrAccessor: FlagSet = Private | Accessor
@@ -104,7 +83,7 @@ class MixinOps(cls: ClassSymbol, thisPhase: DenotTransformer)(implicit ctx: Cont
   private def competingMethodsIterator(meth: Symbol): Iterator[Symbol] = {
     cls.baseClasses.iterator
       .filter(_ ne meth.owner)
-      .map(meth.overriddenSymbol)
+      .map(base => meth.overriddenSymbol(base, cls))
       .filter(_.exists)
   }
 }
