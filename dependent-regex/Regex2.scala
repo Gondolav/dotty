@@ -81,15 +81,17 @@ object Regex {
     dependent case object Chr extends Type {
         override def toString(): String = "Char"
     }
+    dependent case object RegexError
 
     dependent def compileRegex(s: List): Any = compile(s, Str, 0, false, 0, NilA, Nil)
 
     dependent private def compile(s: List, currType: Type, chars: Int, charClass: Boolean, classes: Int, groupsTypes: ListA, groupsTypesRepr: List): Any = {
-        if (!checkParens(s)) compile(s, currType, chars, charClass, classes, groupsTypes, groupsTypesRepr)
-
         if (s.isInstanceOf[Nil.type]) returnType2(s, groupsTypes, groupsTypesRepr)
         else if (charClass) {
-            if (isDigit(s.asInstanceOf[Cons].head)) compile(s.asInstanceOf[Cons].tail, Integ, chars, charClass, classes, groupsTypes, groupsTypesRepr)
+            if (isDigit(s.asInstanceOf[Cons].head)) {
+                if (currType.isInstanceOf[Integ.type]) compile(s.asInstanceOf[Cons].tail, Integ, chars, charClass, classes, groupsTypes, groupsTypesRepr)
+                else RegexError
+            }
             else if (s.asInstanceOf[Cons].head == '-') compile(s.asInstanceOf[Cons].tail, currType, chars, charClass, classes, groupsTypes, groupsTypesRepr)
             else if (s.asInstanceOf[Cons].head == ']') {
                 if (classes == 1 && currType.isInstanceOf[Str.type]) compile(s.asInstanceOf[Cons].tail, Chr, chars, false, classes, groupsTypes, groupsTypesRepr)
@@ -130,15 +132,15 @@ object Regex {
                 else {
                     val firstMatch = firstMatchOpt.get
                     Some(returnTypeRepr.toSeq.zipWithIndex.map {
-                            case ('S', i) => firstMatch.group(i).toString
-                            case ('I', i) => firstMatch.group(i).toInt
-                            case ('C', i) => firstMatch.group(i).toChar
+                            case (s) if s._1 == 'S' => firstMatch.group(s._2).toString
+                            case (s) if s._1 == 'I' => firstMatch.group(s._2).toInt
+                            case (s) if s._1 == 'C' => firstMatch.group(s._2)(0)
                         })
                     }
         }.asInstanceOf[String => Option[{ returnTypes }]]
     }
 
-    //val x = compileRegex(Cons('(', Nil))
+    //val x: String => Int = compileRegex(Cons('(', Cons('[', Nil)))
     //val x1: String => String = compileRegex(Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Nil))))))))
     // val x2: String => Char = compileRegex(Cons('(', Cons('a', Cons(')', Nil))))
     // val x3: String => Int = compileRegex(Cons('(', Cons('1', Cons('2', Cons('3', Nil)))))
@@ -147,13 +149,20 @@ object Regex {
     // val x5: String => Int = compileRegex(Cons('(', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons(')', Nil)))))))))))))
     // val x6: String => Int = compileRegex(Cons('(', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons(')', Nil))))))))
     // val x7: String => Char = compileRegex(Cons('(', Cons('[', Cons('A', Cons('-', Cons('Z', Cons(']', Cons(')', Nil))))))))
-    //val x8: { ConsA(??? : String, ConsA(??? : Char, NilA)) } = compileRegex(Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Cons('(', Cons('a', Cons(')', Nil)))))))))))
-    val myPattern: String => Option[{ ConsA(??? : String, ConsA(??? : Char, NilA)) }] = compileRegex(Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Cons('(', Cons('a', Cons(')', Nil)))))))))))
+    // val x8: { ConsA(??? : String, ConsA(??? : Char, NilA)) } = compileRegex(Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Cons('(', Cons('a', Cons(')', Nil)))))))))))
 
-    myPattern.apply("myString") match {
+    val myPattern: String => Option[{ ConsA(??? : String, ConsA(??? : Char, NilA)) }] = compileRegex(Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Cons('(', Cons('a', Cons(')', Nil)))))))))))
+    myPattern.apply("asdfsa") match {
         case None => 1
-        case Some(ConsA(s: String, ConsA(c: Char, _))) => 2
+        case Some(ConsA(s: String, ConsA(c: Char, _))) => s
     }
+
+    val myPattern2: String => Option[{ ConsA(??? : Int, NilA) }] = compileRegex(Cons('(', Cons('1', Cons('2', Cons('3', Cons(')', Nil))))))
+    val r2: Int = myPattern.apply("123") match {
+        case None => 1
+        case Some(ConsA(i: Int, NilA)) => i
+    }
+
     // val x9: {Cons('I', Cons('S', Nil))} = compileRegex(Cons('(', Cons('1', Cons('2', Cons('3', Cons('4', Cons('5', Cons(')', Cons('(', Cons('a', Cons('b', Cons(')', Nil))))))))))))
     // val x10: {Cons('I', Cons('C', Nil))} = compileRegex(Cons('(', Cons('[', Cons('1', Cons('-', Cons('3', Cons(']', Cons(')', Cons('(', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons(')', Nil)))))))))))))))
     // val x11: {Cons('I', Cons('S', Nil))} = compileRegex(Cons('(', Cons('[', Cons('1', Cons('-', Cons('3', Cons(']', Cons(')', Cons('(', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons('[', Cons('a', Cons('-', Cons('b', Cons(']', Cons(')', Nil))))))))))))))))))))
