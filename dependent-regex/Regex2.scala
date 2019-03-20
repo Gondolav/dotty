@@ -26,10 +26,20 @@ object ListCharConcat {
             toStringAux(this)
             builder.toString
         }
+
+        dependent def toTypesList: ListA = {
+            if (this.isInstanceOf[Nil.type]) NilA
+            else ConsA(toType(this.asInstanceOf[Cons].head), this.asInstanceOf[Cons].tail.toTypesList)
+        }
+
+        dependent def toType(c: Char) = {
+            if (c == 'C') c
+            else if (c == 'S') "s"
+            else 0
+        }
     }
     dependent case object Nil extends List
     dependent case class Cons(head: Char, tail: List) extends List
-
 
     sealed trait ListA {
         dependent def ++(that: ListA): ListA =
@@ -83,40 +93,37 @@ object Regex {
     }
     dependent case object RegexError
 
-    dependent def compileRegex(s: List): Any = compile(s, Str, 0, false, 0, NilA, Nil)
+    dependent def compileRegex(s: List): Any = {
+        if (checkParens(s)) compile(s, Str, 0, false, 0, Nil, s)
+        else RegexError
+    }
 
-    dependent private def compile(s: List, currType: Type, chars: Int, charClass: Boolean, classes: Int, groupsTypes: ListA, groupsTypesRepr: List): Any = {
-        if (s.isInstanceOf[Nil.type]) returnType2(s, groupsTypes, groupsTypesRepr)
+    dependent private def compile(s: List, currType: Type, chars: Int, charClass: Boolean, classes: Int, groupsTypesRepr: List, cachedRegex: => List): Any = {
+        if (s.isInstanceOf[Nil.type]) returnType2(cachedRegex, groupsTypesRepr)
         else if (charClass) {
             if (isDigit(s.asInstanceOf[Cons].head)) {
-                if (currType.isInstanceOf[Integ.type]) compile(s.asInstanceOf[Cons].tail, Integ, chars, charClass, classes, groupsTypes, groupsTypesRepr)
-                else RegexError
+                if (currType.isInstanceOf[Integ.type]) compile(s.asInstanceOf[Cons].tail, Integ, chars, charClass, classes, groupsTypesRepr, cachedRegex)
+                else RegexError // TODO
             }
-            else if (s.asInstanceOf[Cons].head == '-') compile(s.asInstanceOf[Cons].tail, currType, chars, charClass, classes, groupsTypes, groupsTypesRepr)
+            else if (s.asInstanceOf[Cons].head == '-') compile(s.asInstanceOf[Cons].tail, currType, chars, charClass, classes, groupsTypesRepr, cachedRegex)
             else if (s.asInstanceOf[Cons].head == ']') {
-                if (classes == 1 && currType.isInstanceOf[Str.type]) compile(s.asInstanceOf[Cons].tail, Chr, chars, false, classes, groupsTypes, groupsTypesRepr)
-                else compile(s.asInstanceOf[Cons].tail, currType, chars, false, classes, groupsTypes, groupsTypesRepr)
+                if (classes == 1 && currType.isInstanceOf[Str.type]) compile(s.asInstanceOf[Cons].tail, Chr, chars, false, classes, groupsTypesRepr, cachedRegex)
+                else compile(s.asInstanceOf[Cons].tail, currType, chars, false, classes, groupsTypesRepr, cachedRegex)
             }
-            else compile(s.asInstanceOf[Cons].tail, Str, chars, charClass, classes, groupsTypes, groupsTypesRepr)
+            else compile(s.asInstanceOf[Cons].tail, Str, chars, charClass, classes, groupsTypesRepr, cachedRegex)
         } else {
             if (s.asInstanceOf[Cons].head == '[') {
-                if (!checkBrackets(s)) compile(s, currType, chars, charClass, classes, groupsTypes, groupsTypesRepr)
-                compile(s.asInstanceOf[Cons].tail, currType, chars, true, classes + 1, groupsTypes, groupsTypesRepr)
+                if (!checkBrackets(s)) compile(s, currType, chars, charClass, classes, groupsTypesRepr, cachedRegex)
+                compile(s.asInstanceOf[Cons].tail, currType, chars, true, classes + 1, groupsTypesRepr, cachedRegex)
             }
-            else if (s.asInstanceOf[Cons].head == '(') compile(s.asInstanceOf[Cons].tail, Str, 0, false, 0, groupsTypes, groupsTypesRepr)
-            else if (s.asInstanceOf[Cons].head == ')') compile(s.asInstanceOf[Cons].tail, currType, chars, charClass, classes, addTypeToListA(currType, groupsTypes, chars), addTypeToList(currType, groupsTypesRepr, chars))
-            else if (isDigit(s.asInstanceOf[Cons].head)) compile(s.asInstanceOf[Cons].tail, Integ, chars, charClass, classes, groupsTypes, groupsTypesRepr)
-            else compile(s.asInstanceOf[Cons].tail, Str, chars + 1, charClass, classes, groupsTypes, groupsTypesRepr)
+            else if (s.asInstanceOf[Cons].head == '(') compile(s.asInstanceOf[Cons].tail, Str, 0, false, 0, groupsTypesRepr, cachedRegex)
+            else if (s.asInstanceOf[Cons].head == ')') compile(s.asInstanceOf[Cons].tail, currType, chars, charClass, classes, addTypeToList(currType, groupsTypesRepr, chars), cachedRegex)
+            else if (isDigit(s.asInstanceOf[Cons].head)) compile(s.asInstanceOf[Cons].tail, Integ, chars, charClass, classes, groupsTypesRepr, cachedRegex)
+            else compile(s.asInstanceOf[Cons].tail, Str, chars + 1, charClass, classes, groupsTypesRepr, cachedRegex)
         }
     }
 
     dependent private def isDigit(c: Char): Boolean = '0' <= c && c <= '9'
-
-    dependent private def addTypeToListA(t: Type, l: ListA, chars: Int): ListA = {
-        if (chars == 1 || t.isInstanceOf[Chr.type]) l ++ ConsA(??? : Char, NilA)
-        else if (t.isInstanceOf[Str.type]) l ++ ConsA(??? : String, NilA)
-        else l ++ ConsA(??? : Int, NilA)
-    }
 
     dependent private def addTypeToList(t: Type, l: List, chars: Int): List = {
         if (chars == 1 || t.isInstanceOf[Chr.type]) l ++ Cons('C', Nil)
@@ -124,21 +131,25 @@ object Regex {
         else l ++ Cons('I', Nil)
     }
 
-    dependent private def returnType2(regex: List, returnTypes: ListA, returnTypeRepr: List): String => Option[{ returnTypes }] = {
+    def toListA(s: Seq[Any]): ListA = {
+        if (s.isEmpty) NilA
+        else ConsA(s.head, toListA(s.tail))
+    }
+
+    dependent private def returnType2(regex: List, returnTypesRepr: List): String => Option[{ returnTypesRepr.toTypesList }] =
         {
             input: String =>
                 val firstMatchOpt = regex.toString.r.findFirstMatchIn(input)
                 if (firstMatchOpt.isEmpty) None
                 else {
                     val firstMatch = firstMatchOpt.get
-                    Some(returnTypeRepr.toSeq.zipWithIndex.map {
-                            case (s) if s._1 == 'S' => firstMatch.group(s._2).toString
-                            case (s) if s._1 == 'I' => firstMatch.group(s._2).toInt
-                            case (s) if s._1 == 'C' => firstMatch.group(s._2)(0)
-                        })
+                    Some(toListA(returnTypesRepr.toSeq.zipWithIndex.map {
+                            case (s) if s._1 == 'S' => firstMatch.group(s._2 + 1).toString
+                            case (s) if s._1 == 'I' => firstMatch.group(s._2 + 1).toInt
+                            case (s) if s._1 == 'C' => firstMatch.group(s._2 + 1)(0)
+                        }))
                     }
-        }.asInstanceOf[String => Option[{ returnTypes }]]
-    }
+        }.asInstanceOf[String => Option[{ returnTypesRepr.toTypesList }]]
 
     //val x: String => Int = compileRegex(Cons('(', Cons('[', Nil)))
     //val x1: String => String = compileRegex(Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Nil))))))))
@@ -152,14 +163,14 @@ object Regex {
     // val x8: { ConsA(??? : String, ConsA(??? : Char, NilA)) } = compileRegex(Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Cons('(', Cons('a', Cons(')', Nil)))))))))))
 
     val myPattern: String => Option[{ ConsA(??? : String, ConsA(??? : Char, NilA)) }] = compileRegex(Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Cons('(', Cons('a', Cons(')', Nil)))))))))))
-    myPattern.apply("asdfsa") match {
-        case None => 1
-        case Some(ConsA(s: String, ConsA(c: Char, _))) => s
+    val r1: String = (myPattern.apply("asdfsa"): @unchecked) match {
+        case None => "none"
+        case Some(ConsA(s, ConsA(c, NilA))) => s.asInstanceOf[String]
     }
 
     val myPattern2: String => Option[{ ConsA(??? : Int, NilA) }] = compileRegex(Cons('(', Cons('1', Cons('2', Cons('3', Cons(')', Nil))))))
-    val r2: Int = myPattern.apply("123") match {
-        case None => 1
+    val r2: Int = (myPattern2.apply("123"): @unchecked) match {
+        case None => -1
         case Some(ConsA(i: Int, NilA)) => i
     }
 
@@ -168,4 +179,9 @@ object Regex {
     // val x11: {Cons('I', Cons('S', Nil))} = compileRegex(Cons('(', Cons('[', Cons('1', Cons('-', Cons('3', Cons(']', Cons(')', Cons('(', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons('[', Cons('a', Cons('-', Cons('b', Cons(']', Cons(')', Nil))))))))))))))))))))
     // val x12: {Cons('S', Cons('S', Nil))} = compileRegex(Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Cons('(', Cons('a', Cons('b', Cons(')', Nil))))))))))))
     // val x13: {Cons('S', Cons('C', Cons('C', Nil)))} = compileRegex(Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Cons('(', Cons('a', Cons(')', Cons('(', Cons('e', Cons(')', Nil))))))))))))))
+
+    def main(args: Array[String]): Unit = {
+        println(s"r1: $r1")
+        println(s"r2: $r2")
+    }
 }
