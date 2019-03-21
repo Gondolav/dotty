@@ -41,6 +41,7 @@ object ListCharConcat {
     dependent case object Nil extends List
     dependent case class Cons(head: Char, tail: List) extends List
 
+
     sealed trait ListA {
         dependent def ++(that: ListA): ListA =
             if (this.isInstanceOf[NilA.type]) that
@@ -101,26 +102,26 @@ object Regex {
     dependent private def compile(s: List, currType: Type, chars: Int, charClass: Boolean, classes: Int, groupsTypesRepr: List, cachedRegex: => List): Any = {
         if (s.isInstanceOf[Nil.type]) returnType2(cachedRegex, groupsTypesRepr)
         else if (charClass) {
-            if (isDigit(s.asInstanceOf[Cons].head)) {
-                if (currType.isInstanceOf[Integ.type]) compile(s.asInstanceOf[Cons].tail, Integ, chars, charClass, classes, groupsTypesRepr, cachedRegex)
-                else RegexError // TODO
-            }
-            else if (s.asInstanceOf[Cons].head == '-') compile(s.asInstanceOf[Cons].tail, currType, chars, charClass, classes, groupsTypesRepr, cachedRegex)
-            else if (s.asInstanceOf[Cons].head == ']') {
-                if (classes == 1 && currType.isInstanceOf[Str.type]) compile(s.asInstanceOf[Cons].tail, Chr, chars, false, classes, groupsTypesRepr, cachedRegex)
-                else compile(s.asInstanceOf[Cons].tail, currType, chars, false, classes, groupsTypesRepr, cachedRegex)
-            }
-            else compile(s.asInstanceOf[Cons].tail, Str, chars, charClass, classes, groupsTypesRepr, cachedRegex)
+            if (checkBrackets(cachedRegex)) compileCharClass(s, currType, chars, charClass, classes, groupsTypesRepr, cachedRegex, '0')
+            else RegexError
         } else {
-            if (s.asInstanceOf[Cons].head == '[') {
-                if (!checkBrackets(s)) compile(s, currType, chars, charClass, classes, groupsTypesRepr, cachedRegex)
-                compile(s.asInstanceOf[Cons].tail, currType, chars, true, classes + 1, groupsTypesRepr, cachedRegex)
-            }
+            if (s.asInstanceOf[Cons].head == '[') compile(s.asInstanceOf[Cons].tail, currType, chars, true, classes + 1, groupsTypesRepr, cachedRegex)
             else if (s.asInstanceOf[Cons].head == '(') compile(s.asInstanceOf[Cons].tail, Str, 0, false, 0, groupsTypesRepr, cachedRegex)
             else if (s.asInstanceOf[Cons].head == ')') compile(s.asInstanceOf[Cons].tail, currType, chars, charClass, classes, addTypeToList(currType, groupsTypesRepr, chars), cachedRegex)
             else if (isDigit(s.asInstanceOf[Cons].head)) compile(s.asInstanceOf[Cons].tail, Integ, chars, charClass, classes, groupsTypesRepr, cachedRegex)
             else compile(s.asInstanceOf[Cons].tail, Str, chars + 1, charClass, classes, groupsTypesRepr, cachedRegex)
         }
+    }
+
+    dependent private def compileCharClass(s: List, currType: Type, chars: Int, charClass: Boolean, classes: Int, groupsTypesRepr: List, cachedRegex: => List, firstElemInClass: Char): Any = {
+        if (s.asInstanceOf[Cons].head == '-') compileCharClass(s.asInstanceOf[Cons].tail, currType, chars, charClass, classes, groupsTypesRepr, cachedRegex, firstElemInClass)
+        else if (s.asInstanceOf[Cons].head == ']') {
+            if (classes == 1 && currType.isInstanceOf[Str.type]) compile(s.asInstanceOf[Cons].tail, Chr, chars, false, classes, groupsTypesRepr, cachedRegex)
+            else compile(s.asInstanceOf[Cons].tail, currType, chars, false, classes, groupsTypesRepr, cachedRegex)
+        }
+        else if (firstElemInClass > s.asInstanceOf[Cons].head) RegexError
+        else if (isDigit(s.asInstanceOf[Cons].head)) compileCharClass(s.asInstanceOf[Cons].tail, Integ, chars, charClass, classes, groupsTypesRepr, cachedRegex, s.asInstanceOf[Cons].head)
+        else compileCharClass(s.asInstanceOf[Cons].tail, Str, chars, charClass, classes, groupsTypesRepr, cachedRegex, s.asInstanceOf[Cons].head)
     }
 
     dependent private def isDigit(c: Char): Boolean = '0' <= c && c <= '9'
@@ -151,7 +152,7 @@ object Regex {
                     }
         }.asInstanceOf[String => Option[{ returnTypesRepr.toTypesList }]]
 
-    //val x: String => Int = compileRegex(Cons('(', Cons('[', Nil)))
+    //val x: String => Int = compileRegex(Cons('(', Cons('[', Cons(')', Nil))))
     //val x1: String => String = compileRegex(Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Nil))))))))
     // val x2: String => Char = compileRegex(Cons('(', Cons('a', Cons(')', Nil))))
     // val x3: String => Int = compileRegex(Cons('(', Cons('1', Cons('2', Cons('3', Nil)))))
@@ -162,8 +163,8 @@ object Regex {
     // val x7: String => Char = compileRegex(Cons('(', Cons('[', Cons('A', Cons('-', Cons('Z', Cons(']', Cons(')', Nil))))))))
     // val x8: { ConsA(??? : String, ConsA(??? : Char, NilA)) } = compileRegex(Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Cons('(', Cons('a', Cons(')', Nil)))))))))))
 
-    val myPattern: String => Option[{ ConsA(??? : String, ConsA(??? : Char, NilA)) }] = compileRegex(Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Cons('(', Cons('a', Cons(')', Nil)))))))))))
-    val r1: String = (myPattern.apply("asdfsa"): @unchecked) match {
+    val myPattern1: String => Option[{ ConsA(??? : String, ConsA(??? : Char, NilA)) }] = compileRegex(Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Cons('(', Cons('a', Cons(')', Nil)))))))))))
+    val r1: String = (myPattern1.apply("asdfsa"): @unchecked) match {
         case None => "none"
         case Some(ConsA(s, ConsA(c, NilA))) => s.asInstanceOf[String]
     }
@@ -172,6 +173,12 @@ object Regex {
     val r2: Int = (myPattern2.apply("123"): @unchecked) match {
         case None => -1
         case Some(ConsA(i: Int, NilA)) => i
+    }
+
+    val myPattern3: String => Option[{ ConsA(??? : Char, NilA) }] = compileRegex(Cons('(', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons(')', Nil))))))))
+    val r3: Char = (myPattern3.apply("f"): @unchecked) match {
+        case None => 'n'
+        case Some(ConsA(c, NilA)) => c.asInstanceOf[Char]
     }
 
     // val x9: {Cons('I', Cons('S', Nil))} = compileRegex(Cons('(', Cons('1', Cons('2', Cons('3', Cons('4', Cons('5', Cons(')', Cons('(', Cons('a', Cons('b', Cons(')', Nil))))))))))))
@@ -183,5 +190,6 @@ object Regex {
     def main(args: Array[String]): Unit = {
         println(s"r1: $r1")
         println(s"r2: $r2")
+        println(s"r3: $r3")
     }
 }
