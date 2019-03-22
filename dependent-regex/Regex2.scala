@@ -106,7 +106,7 @@ object Regex {
     dependent private def compile(s: List, currType: Type, chars: Int, charClass: Boolean, classes: Int, groupsTypesRepr: List, cachedRegex: => List): Any = {
         if (s.isInstanceOf[Nil.type]) returnType(cachedRegex, groupsTypesRepr)
         else if (charClass) {
-            if (checkBrackets(cachedRegex)) compileCharClass(s, currType, chars, charClass, classes, groupsTypesRepr, cachedRegex, '0') // replace 0 with smallest ASCII symbol
+            if (checkBrackets(cachedRegex)) compileCharClass(s, currType, chars, charClass, classes, groupsTypesRepr, cachedRegex, ' ')
             else RegexError
         } else {
             if (s.asInstanceOf[Cons].head == '[') compile(s.asInstanceOf[Cons].tail, currType, chars, true, classes + 1, groupsTypesRepr, cachedRegex)
@@ -168,31 +168,31 @@ object Regex {
     // val x8: { ConsA(??? : String, ConsA(??? : Char, NilA)) } = compileRegex(Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Cons('(', Cons('a', Cons(')', Nil)))))))))))
 
     val myPattern1: String => Option[{ ConsA(??? : String, ConsA(??? : Char, NilA)) }] = compileRegex(Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Cons('(', Cons('a', Cons(')', Nil)))))))))))
-    val r1: String = (myPattern1.apply("asdfsa"): @unchecked) match {
+    val r1: String = (myPattern1("asdfsa"): @unchecked) match {
         case None => "none"
         case Some(ConsA(s, ConsA(c, NilA))) => s.asInstanceOf[String]
     }
 
     val myPattern2: String => Option[{ ConsA(??? : Int, NilA) }] = compileRegex(Cons('(', Cons('1', Cons('2', Cons('3', Cons(')', Nil))))))
-    val r2: Int = (myPattern2.apply("123"): @unchecked) match {
+    val r2: Int = (myPattern2("123"): @unchecked) match {
         case None => -1
         case Some(ConsA(i: Int, NilA)) => i
     }
 
     val myPattern3: String => Option[{ ConsA(??? : Char, NilA) }] = compileRegex(Cons('(', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons(')', Nil))))))))
-    val r3: Char = (myPattern3.apply("f"): @unchecked) match {
+    val r3: Char = (myPattern3("f"): @unchecked) match {
         case None => 'n'
         case Some(ConsA(c, NilA)) => c.asInstanceOf[Char]
     }
 
     val myPattern4: String => Option[{ ConsA(??? : String, NilA) }] = compileRegex(Cons('(', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons(')', Nil)))))))))))))
-    val r4: String = (myPattern4.apply("s0"): @unchecked) match {
+    val r4: String = (myPattern4("s0"): @unchecked) match {
         case None => "none"
         case Some(ConsA(s, NilA)) => s.asInstanceOf[String]
     }
 
     val myPattern5: String => Option[{ ConsA(??? : String, NilA) }] = compileRegex(Cons('(', Cons('a', Cons('[', Cons('a', Cons('-', Cons('b', Cons(']', Cons('0', Cons('[', Cons('8', Cons('-', Cons('9', Cons(']', Cons(')', Nil)))))))))))))))
-    val r5: String = (myPattern5.apply("ab09"): @unchecked) match {
+    val r5: String = (myPattern5("ab09"): @unchecked) match {
         case None => "none"
         case Some(ConsA(s, NilA)) => s.asInstanceOf[String]
     }
