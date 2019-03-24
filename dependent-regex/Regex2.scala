@@ -156,17 +156,6 @@ object Regex {
                     }
         }.asInstanceOf[String => Option[{ returnTypesRepr.toTypesList }]]
 
-    //val x: String => Int = compileRegex(Cons('(', Cons('[', Cons(')', Nil))))
-    //val x1: String => String = compileRegex(Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Nil))))))))
-    // val x2: String => Char = compileRegex(Cons('(', Cons('a', Cons(')', Nil))))
-    // val x3: String => Int = compileRegex(Cons('(', Cons('1', Cons('2', Cons('3', Nil)))))
-    //
-    // val x4: String => String = compileRegex(Cons('(', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons(')', Nil)))))))))))))
-    // val x5: String => Int = compileRegex(Cons('(', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons(')', Nil)))))))))))))
-    // val x6: String => Int = compileRegex(Cons('(', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons(')', Nil))))))))
-    // val x7: String => Char = compileRegex(Cons('(', Cons('[', Cons('A', Cons('-', Cons('Z', Cons(']', Cons(')', Nil))))))))
-    // val x8: { ConsA(??? : String, ConsA(??? : Char, NilA)) } = compileRegex(Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Cons('(', Cons('a', Cons(')', Nil)))))))))))
-
     val myPattern1: String => Option[{ ConsA(??? : String, ConsA(??? : Char, NilA)) }] = compileRegex(Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Cons('(', Cons('a', Cons(')', Nil)))))))))))
     val r1: String = (myPattern1("asdfsa"): @unchecked) match {
         case None => "none"
@@ -196,11 +185,6 @@ object Regex {
         case None => "none"
         case Some(ConsA(s, NilA)) => s.asInstanceOf[String]
     }
-    // val x9: {Cons('I', Cons('S', Nil))} = compileRegex(Cons('(', Cons('1', Cons('2', Cons('3', Cons('4', Cons('5', Cons(')', Cons('(', Cons('a', Cons('b', Cons(')', Nil))))))))))))
-    // val x10: {Cons('I', Cons('C', Nil))} = compileRegex(Cons('(', Cons('[', Cons('1', Cons('-', Cons('3', Cons(']', Cons(')', Cons('(', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons(')', Nil)))))))))))))))
-    // val x11: {Cons('I', Cons('S', Nil))} = compileRegex(Cons('(', Cons('[', Cons('1', Cons('-', Cons('3', Cons(']', Cons(')', Cons('(', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons('[', Cons('a', Cons('-', Cons('b', Cons(']', Cons(')', Nil))))))))))))))))))))
-    // val x12: {Cons('S', Cons('S', Nil))} = compileRegex(Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Cons('(', Cons('a', Cons('b', Cons(')', Nil))))))))))))
-    // val x13: {Cons('S', Cons('C', Cons('C', Nil)))} = compileRegex(Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Cons('(', Cons('a', Cons(')', Cons('(', Cons('e', Cons(')', Nil))))))))))))))
 
     def main(args: Array[String]): Unit = {
         println(s"r1: $r1")
@@ -209,4 +193,35 @@ object Regex {
         println(s"r4: $r4")
         println(s"r5: $r5")
     }
+}
+
+object RegexTests {
+    import Regex.compileRegex
+    import ListCharConcat._
+
+    val x1: String => Option[{ ConsA(??? : String, NilA) }] = compileRegex(Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Nil))))))))
+
+    val x2: String => Option[{ ConsA(??? : Char, NilA) }] = compileRegex(Cons('(', Cons('a', Cons(')', Nil))))
+
+    val x3: String => Option[{ ConsA(??? : Int, NilA) }] = compileRegex(Cons('(', Cons('1', Cons('2', Cons('3', Cons(')', Nil))))))
+
+    val x4: String => Option[{ ConsA(??? : String, NilA) }] = compileRegex(Cons('(', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons(')', Nil)))))))))))))
+
+    val x5: String => Option[{ ConsA(??? : Int, NilA) }] = compileRegex(Cons('(', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons(')', Nil)))))))))))))
+
+    val x6: String => Option[{ ConsA(??? : Int, NilA) }] = compileRegex(Cons('(', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons(')', Nil))))))))
+
+    val x7: String => Option[{ ConsA(??? : Char, NilA) }] = compileRegex(Cons('(', Cons('[', Cons('A', Cons('-', Cons('Z', Cons(']', Cons(')', Nil))))))))
+
+    val x8: String => Option[{ ConsA(??? : String, ConsA(??? : Char, NilA)) }] = compileRegex(Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Cons('(', Cons('a', Cons(')', Nil)))))))))))
+
+    val x9: String => Option[{ ConsA(??? : Int, ConsA(??? : String, NilA)) }] = compileRegex(Cons('(', Cons('1', Cons('2', Cons('3', Cons('4', Cons('5', Cons(')', Cons('(', Cons('a', Cons('b', Cons(')', Nil))))))))))))
+
+    val x10: String => Option[{ ConsA(??? : Int, ConsA(??? : Char, NilA)) }] = compileRegex(Cons('(', Cons('[', Cons('1', Cons('-', Cons('3', Cons(']', Cons(')', Cons('(', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons(')', Nil)))))))))))))))
+
+    val x11: String => Option[{ ConsA(??? : Int, ConsA(??? : String, NilA)) }] = compileRegex(Cons('(', Cons('[', Cons('1', Cons('-', Cons('3', Cons(']', Cons(')', Cons('(', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons('[', Cons('a', Cons('-', Cons('b', Cons(']', Cons(')', Nil))))))))))))))))))))
+
+    val x12: String => Option[{ ConsA(??? : String, ConsA(??? : String, NilA)) }] = compileRegex(Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Cons('(', Cons('a', Cons('b', Cons(')', Nil))))))))))))
+
+    val x13: String => Option[{ ConsA(??? : String, ConsA(??? : Char, ConsA(??? : Char, NilA))) }] = compileRegex(Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Cons('(', Cons('a', Cons(')', Cons('(', Cons('e', Cons(')', Nil))))))))))))))
 }
