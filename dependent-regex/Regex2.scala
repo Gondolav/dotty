@@ -4,6 +4,8 @@ object ListCharConcat {
             if (this.isInstanceOf[Nil.type]) that
             else Cons(this.asInstanceOf[Cons].head, this.asInstanceOf[Cons].tail ++ that)
 
+        //dependent def init: List =
+
         def toSeq: Seq[Char] = {
             def toSeqAux(list: List, acc: Seq[Char]): Seq[Char] = {
                 if (list.isInstanceOf[Nil.type]) acc
@@ -35,7 +37,10 @@ object ListCharConcat {
         dependent def toType(c: Char) = {
             if (c == 'C') c
             else if (c == 'S') "s"
-            else 0
+            else if (c == 'I') 0
+            else if (c == 'H') Some('c')
+            else if (c == 'T') Some("s")
+            else Some(0)
         }
     }
     dependent case object Nil extends List
@@ -96,6 +101,8 @@ object Regex {
         override def toString(): String = "Empty"
     }
 
+    dependent case class Optional(tp: Type) extends Type
+
     dependent case object RegexError
 
     dependent def compileRegex(s: List): Any = {
@@ -112,6 +119,7 @@ object Regex {
             if (s.asInstanceOf[Cons].head == '[') compile(s.asInstanceOf[Cons].tail, currType, chars, true, classes + 1, groupsTypesRepr, cachedRegex)
             else if (s.asInstanceOf[Cons].head == '(') compile(s.asInstanceOf[Cons].tail, Empty, 0, false, 0, groupsTypesRepr, cachedRegex)
             else if (s.asInstanceOf[Cons].head == ')') compile(s.asInstanceOf[Cons].tail, currType, chars, charClass, classes, addTypeToList(currType, groupsTypesRepr, chars), cachedRegex)
+            else if (s.asInstanceOf[Cons].head == '?') compile(s.asInstanceOf[Cons].tail, currType, chars, charClass, classes, addTypeToList(Optional(currType), groupsTypesRepr.asInstanceOf[Cons].tail, chars), cachedRegex) // replace.tail with .init
             else if (isDigit(s.asInstanceOf[Cons].head) && (currType.isInstanceOf[Empty.type] || currType.isInstanceOf[Integ.type])) compile(s.asInstanceOf[Cons].tail, Integ, chars, charClass, classes, groupsTypesRepr, cachedRegex)
             else compile(s.asInstanceOf[Cons].tail, Str, chars + 1, charClass, classes, groupsTypesRepr, cachedRegex)
         }
@@ -131,7 +139,13 @@ object Regex {
     dependent private def isDigit(c: Char): Boolean = '0' <= c && c <= '9'
 
     dependent private def addTypeToList(t: Type, l: List, chars: Int): List = {
-        if (chars == 1 || t.isInstanceOf[Chr.type]) l ++ Cons('C', Nil)
+        if (t.isInstanceOf[Optional]) {
+            val tp = t.asInstanceOf[Optional].tp
+            if (chars == 1 || tp.isInstanceOf[Chr.type]) l ++ Cons('H', Nil)
+            else if (tp.isInstanceOf[Str.type]) l ++ Cons('T', Nil)
+            else l ++ Cons('N', Nil)
+        }
+        else if (chars == 1 || t.isInstanceOf[Chr.type]) l ++ Cons('C', Nil)
         else if (t.isInstanceOf[Str.type]) l ++ Cons('S', Nil)
         else l ++ Cons('I', Nil)
     }
@@ -152,6 +166,18 @@ object Regex {
                             case (s) if s._1 == 'S' => firstMatch.group(s._2 + 1).toString
                             case (s) if s._1 == 'I' => firstMatch.group(s._2 + 1).toInt
                             case (s) if s._1 == 'C' => firstMatch.group(s._2 + 1)(0)
+                            case (s) if s._1 == 'T' =>
+                                val group = firstMatch.group(s._2 + 1)
+                                if (group == null) None
+                                else Some(firstMatch.group(s._2 + 1).toString)
+                            case (s) if s._1 == 'N' =>
+                                val group = firstMatch.group(s._2 + 1)
+                                if (group == null) None
+                                else Some(firstMatch.group(s._2 + 1).toInt)
+                            case (s) if s._1 == 'H' =>
+                                val group = firstMatch.group(s._2 + 1)
+                                if (group == null) None
+                                else Some(firstMatch.group(s._2 + 1)(0))
                         }))
                     }
         }.asInstanceOf[String => Option[{ returnTypesRepr.toTypesList }]]
@@ -186,12 +212,22 @@ object Regex {
         case Some(ConsA(s, NilA)) => s.asInstanceOf[String]
     }
 
+    val myPattern6: String => Option[{ ConsA(??? : Option[String], ConsA(??? : Char, NilA)) }] = compileRegex(Cons('(', Cons('a', Cons('b', Cons(')', Cons('?', Cons('(', Cons('c', Cons(')', Nil)))))))))
+    val r6: (String, Char) = (myPattern6("abc"): @unchecked) match {
+        case None => ("none", 'n')
+        case Some(ConsA(s, ConsA(c, NilA))) => {
+            if (s.asInstanceOf[Option[String]].isEmpty) ("none", c.asInstanceOf[Char])
+            else (s.asInstanceOf[Option[String]].get, c.asInstanceOf[Char])
+        }
+    }
+
     def main(args: Array[String]): Unit = {
         println(s"r1: $r1")
         println(s"r2: $r2")
         println(s"r3: $r3")
         println(s"r4: $r4")
         println(s"r5: $r5")
+        println(s"r6: $r6")
     }
 }
 
@@ -224,4 +260,12 @@ object RegexTests {
     val x12: String => Option[{ ConsA(??? : String, ConsA(??? : String, NilA)) }] = compileRegex(Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Cons('(', Cons('a', Cons('b', Cons(')', Nil))))))))))))
 
     val x13: String => Option[{ ConsA(??? : String, ConsA(??? : Char, ConsA(??? : Char, NilA))) }] = compileRegex(Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Cons('(', Cons('a', Cons(')', Cons('(', Cons('e', Cons(')', Nil))))))))))))))
+
+    val x14: String => Option[{ ConsA(??? : Option[String], ConsA(??? : Char, NilA)) }] = compileRegex(Cons('(', Cons('a', Cons('b', Cons(')', Cons('?', Cons('(', Cons('c', Cons(')', Nil)))))))))
+
+    val x15: String => Option[{ ConsA(??? : Option[Char], ConsA(??? : Char, NilA)) }] = compileRegex(Cons('(', Cons('a', Cons(')', Cons('?', Cons('(', Cons('c', Cons(')', Nil))))))))
+
+    val x16: String => Option[{ ConsA(??? : Option[Int], ConsA(??? : Char, NilA)) }] = compileRegex(Cons('(', Cons('1', Cons(')', Cons('?', Cons('(', Cons('c', Cons(')', Nil))))))))
+
+    val x17: String => Option[{ ConsA(??? : Option[Int], ConsA(??? : Option[Char], NilA)) }] = compileRegex(Cons('(', Cons('1', Cons(')', Cons('?', Cons('(', Cons('c', Cons(')', Cons('?', Nil)))))))))
 }
