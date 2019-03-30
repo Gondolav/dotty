@@ -4,7 +4,9 @@ object ListCharConcat {
             if (this.isInstanceOf[Nil.type]) that
             else Cons(this.asInstanceOf[Cons].head, this.asInstanceOf[Cons].tail ++ that)
 
-        //dependent def init: List =
+        dependent def init: List =
+            if (this.asInstanceOf[Cons].tail.isInstanceOf[Nil.type]) Nil
+            else Cons(this.asInstanceOf[Cons].head, this.asInstanceOf[Cons].tail.init)
 
         def toSeq: Seq[Char] = {
             def toSeqAux(list: List, acc: Seq[Char]): Seq[Char] = {
@@ -119,7 +121,7 @@ object Regex {
             if (s.asInstanceOf[Cons].head == '[') compile(s.asInstanceOf[Cons].tail, currType, chars, true, classes + 1, groupsTypesRepr, cachedRegex)
             else if (s.asInstanceOf[Cons].head == '(') compile(s.asInstanceOf[Cons].tail, Empty, 0, false, 0, groupsTypesRepr, cachedRegex)
             else if (s.asInstanceOf[Cons].head == ')') compile(s.asInstanceOf[Cons].tail, currType, chars, charClass, classes, addTypeToList(currType, groupsTypesRepr, chars), cachedRegex)
-            else if (s.asInstanceOf[Cons].head == '?') compile(s.asInstanceOf[Cons].tail, currType, chars, charClass, classes, addTypeToList(Optional(currType), groupsTypesRepr.asInstanceOf[Cons].tail, chars), cachedRegex) // replace.tail with .init
+            else if (s.asInstanceOf[Cons].head == '?') compile(s.asInstanceOf[Cons].tail, currType, chars, charClass, classes, addTypeToList(Optional(currType), groupsTypesRepr.asInstanceOf[Cons].init, chars), cachedRegex)
             else if (isDigit(s.asInstanceOf[Cons].head) && (currType.isInstanceOf[Empty.type] || currType.isInstanceOf[Integ.type])) compile(s.asInstanceOf[Cons].tail, Integ, chars, charClass, classes, groupsTypesRepr, cachedRegex)
             else compile(s.asInstanceOf[Cons].tail, Str, chars + 1, charClass, classes, groupsTypesRepr, cachedRegex)
         }
