@@ -5,7 +5,8 @@ object ListCharConcat {
             else Cons(this.asInstanceOf[Cons].head, this.asInstanceOf[Cons].tail ++ that)
 
         dependent def init: List =
-            if (this.asInstanceOf[Cons].tail.isInstanceOf[Nil.type]) Nil
+            if (this.isInstanceOf[Nil.type]) throw new UnsupportedOperationException("init of empty list")
+            else if (this.asInstanceOf[Cons].tail.isInstanceOf[Nil.type]) Nil
             else Cons(this.asInstanceOf[Cons].head, this.asInstanceOf[Cons].tail.init)
 
         def toSeq: Seq[Char] = {
