@@ -224,12 +224,12 @@ object Regex {
     }
 
     def main(args: Array[String]): Unit = {
-        println(s"r1: $r1")
-        println(s"r2: $r2")
-        println(s"r3: $r3")
-        println(s"r4: $r4")
-        println(s"r5: $r5")
-        println(s"r6: $r6")
+        assert(r1 == "asdfs", s"Found $r1, expected asdfs")
+        assert(r2 == 123, s"Found $r2, expected 123")
+        assert(r3 == 'f', s"Found $r3, expected f")
+        assert(r4 == "s0", s"Found $r4, expected s0")
+        assert(r5 == "ab09", s"Found $r5, expected ab09")
+        assert(r6 == ("ab", 'c'), s"Found $r6, expected (ab, c)")
     }
 }
 
