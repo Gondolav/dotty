@@ -184,27 +184,36 @@ object Regex {
                             case (s) if s._1 == 'T' =>
                                 val group = firstMatch.group(s._2 + 1)
                                 if (group == null) None
-                                else Some(firstMatch.group(s._2 + 1).toString)
+                                else Some(group.toString)
                             case (s) if s._1 == 'G' =>
                                 val group = firstMatch.group(s._2 + 1)
                                 if (group == null) None
-                                else Some(List(firstMatch.group(s._2 + 1).toString))
+                                else {
+                                    val count = input.sliding(group.length).count(window => window == group)
+                                    Some(List.fill(count)(group.toString))
+                                }
                             case (s) if s._1 == 'N' =>
                                 val group = firstMatch.group(s._2 + 1)
                                 if (group == null) None
-                                else Some(firstMatch.group(s._2 + 1).toInt)
+                                else Some(group.toInt)
                             case (s) if s._1 == 'E' =>
                                 val group = firstMatch.group(s._2 + 1)
                                 if (group == null) None
-                                else Some(List(firstMatch.group(s._2 + 1).toInt))
+                                else {
+                                    val count = input.sliding(group.length).count(window => window == group)
+                                    Some(List.fill(count)(group.toInt))
+                                }
                             case (s) if s._1 == 'H' =>
                                 val group = firstMatch.group(s._2 + 1)
                                 if (group == null) None
-                                else Some(firstMatch.group(s._2 + 1)(0))
+                                else Some(group(0))
                             case (s) if s._1 == 'R' =>
                                 val group = firstMatch.group(s._2 + 1)
                                 if (group == null) None
-                                else Some(List(firstMatch.group(s._2 + 1)(0)))
+                                else {
+                                    val count = input.sliding(group.length).count(window => window == group)
+                                    Some(List.fill(count)(group(0)))
+                                }
                         }))
                     }
         }.asInstanceOf[String => Option[{ returnTypesRepr.toTypesList }]]
@@ -257,6 +266,24 @@ object Regex {
         }
     }
 
+    val myPattern8: String => Option[{ ConsA(??? : Option[scala.collection.immutable.List[Int]], ConsA(??? : Char, NilA)) }] = compileRegex(Cons('(', Cons('1', Cons('2', Cons(')', Cons('*', Cons('(', Cons('c', Cons(')', Nil)))))))))
+    val r8: (scala.collection.immutable.List[Int], Char) = (myPattern8("12121212c"): @unchecked) match {
+        case None => (scala.collection.immutable.Nil, 'n')
+        case Some(ConsA(s, ConsA(c, NilA))) => {
+            if (s.asInstanceOf[Option[scala.collection.immutable.List[Int]]].isEmpty) (scala.collection.immutable.Nil, c.asInstanceOf[Char])
+            else (s.asInstanceOf[Option[scala.collection.immutable.List[Int]]].get, c.asInstanceOf[Char])
+        }
+    }
+
+    val myPattern9: String => Option[{ ConsA(??? : Int, ConsA(??? : Option[scala.collection.immutable.List[Char]], NilA)) }] = compileRegex(Cons('(', Cons('1', Cons('2', Cons(')', Cons('(', Cons('c', Cons(')', Cons('*', Nil)))))))))
+    val r9: (Int, scala.collection.immutable.List[Char]) = (myPattern9("12ccc"): @unchecked) match {
+        case None => (0, scala.collection.immutable.Nil)
+        case Some(ConsA(s, ConsA(c, NilA))) => {
+            if (c.asInstanceOf[Option[scala.collection.immutable.List[Char]]].isEmpty) (0, scala.collection.immutable.Nil)
+            else (s.asInstanceOf[Int], c.asInstanceOf[Option[scala.collection.immutable.List[Char]]].get)
+        }
+    }
+
     def main(args: Array[String]): Unit = {
         assert(r1 == "asdfs", s"Found $r1, expected asdfs")
         assert(r2 == 123, s"Found $r2, expected 123")
@@ -264,7 +291,9 @@ object Regex {
         assert(r4 == "s0", s"Found $r4, expected s0")
         assert(r5 == "ab09", s"Found $r5, expected ab09")
         assert(r6 == ("ab", 'c'), s"Found $r6, expected (ab, c)")
-        assert(r7 == (List("ab"), 'c'), s"Found $r7, expected (List(ab), c)")
+        assert(r7 == (List("ab", "ab"), 'c'), s"Found $r7, expected (List(ab, ab), c)")
+        assert(r8 == (List(12, 12, 12, 12), 'c'), s"Found $r8, expected (List(12, 12, 12, 12), c)")
+        assert(r9 == (12, List('c', 'c', 'c')), s"Found $r9, expected (12, List(c, c, c))")
     }
 }
 
@@ -313,6 +342,4 @@ object RegexTests {
     val x20: String => Option[{ ConsA(??? : Option[scala.collection.immutable.List[Int]], ConsA(??? : Char, NilA)) }] = compileRegex(Cons('(', Cons('1', Cons(')', Cons('*', Cons('(', Cons('c', Cons(')', Nil))))))))
 
     val x21: String => Option[{ ConsA(??? : Option[scala.collection.immutable.List[Int]], ConsA(??? : Option[scala.collection.immutable.List[Char]], NilA)) }] = compileRegex(Cons('(', Cons('1', Cons(')', Cons('*', Cons('(', Cons('c', Cons(')', Cons('*', Nil)))))))))
-
-
 }
