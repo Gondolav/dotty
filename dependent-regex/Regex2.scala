@@ -114,7 +114,7 @@ object Regex {
 
     dependent case object RegexError
 
-    dependent case class StarMatch[T](m: T)
+    case class StarMatch[T](m: T)
 
     dependent def compileRegex(s: List): Any = {
         if (checkParens(s)) compile(s, Empty, 0, false, 0, Nil, s)
