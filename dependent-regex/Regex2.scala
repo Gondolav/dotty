@@ -38,20 +38,21 @@ object ListCharConcat {
         }
 
         dependent def toType(c: Char) = {
+            import Regex.StarMatch
+
             if (c == 'C') c
             else if (c == 'S') "s"
             else if (c == 'I') 0
             else if (c == 'H') Some('c')
             else if (c == 'T') Some("s")
             else if (c == 'N') Some(0)
-            else if (c == 'R') Some(List('c'))
-            else if (c == 'G') Some(List("s"))
-            else Some(List(0))
+            else if (c == 'R') Some(StarMatch[Char]('c'))
+            else if (c == 'G') Some(StarMatch[String]("s"))
+            else Some(StarMatch[Int](0))
         }
     }
     dependent case object Nil extends List
     dependent case class Cons(head: Char, tail: List) extends List
-
 
     sealed trait ListA {
         dependent def ++(that: ListA): ListA =
@@ -112,6 +113,8 @@ object Regex {
     dependent case class Star(tp: Type) extends Type
 
     dependent case object RegexError
+
+    dependent case class StarMatch[T](m: T)
 
     dependent def compileRegex(s: List): Any = {
         if (checkParens(s)) compile(s, Empty, 0, false, 0, Nil, s)
@@ -188,10 +191,7 @@ object Regex {
                             case (s) if s._1 == 'G' =>
                                 val group = firstMatch.group(s._2 + 1)
                                 if (group == null) None
-                                else {
-                                    val count = input.sliding(group.length).count(window => window == group)
-                                    Some(List.fill(count)(group.toString))
-                                }
+                                else Some(StarMatch[String](group.toString))
                             case (s) if s._1 == 'N' =>
                                 val group = firstMatch.group(s._2 + 1)
                                 if (group == null) None
@@ -199,10 +199,7 @@ object Regex {
                             case (s) if s._1 == 'E' =>
                                 val group = firstMatch.group(s._2 + 1)
                                 if (group == null) None
-                                else {
-                                    val count = input.sliding(group.length).count(window => window == group)
-                                    Some(List.fill(count)(group.toInt))
-                                }
+                                else Some(StarMatch[Int](group.toInt))
                             case (s) if s._1 == 'H' =>
                                 val group = firstMatch.group(s._2 + 1)
                                 if (group == null) None
@@ -210,10 +207,7 @@ object Regex {
                             case (s) if s._1 == 'R' =>
                                 val group = firstMatch.group(s._2 + 1)
                                 if (group == null) None
-                                else {
-                                    val count = input.sliding(group.length).count(window => window == group)
-                                    Some(List.fill(count)(group(0)))
-                                }
+                                else Some(StarMatch[Char](group(0)))
                         }))
                     }
         }.asInstanceOf[String => Option[{ returnTypesRepr.toTypesList }]]
@@ -257,30 +251,30 @@ object Regex {
         }
     }
 
-    val myPattern7: String => Option[{ ConsA(??? : Option[scala.collection.immutable.List[String]], ConsA(??? : Char, NilA)) }] = compileRegex(Cons('(', Cons('a', Cons('b', Cons(')', Cons('*', Cons('(', Cons('c', Cons(')', Nil)))))))))
-    val r7: (scala.collection.immutable.List[String], Char) = (myPattern7("ababc"): @unchecked) match {
-        case None => (scala.collection.immutable.Nil, 'n')
+    val myPattern7: String => Option[{ ConsA(??? : Option[StarMatch[String]], ConsA(??? : Char, NilA)) }] = compileRegex(Cons('(', Cons('a', Cons('b', Cons(')', Cons('*', Cons('(', Cons('c', Cons(')', Nil)))))))))
+    val r7: (StarMatch[String], Char) = (myPattern7("ababc"): @unchecked) match {
+        case None => (StarMatch("None"), 'n')
         case Some(ConsA(s, ConsA(c, NilA))) => {
-            if (s.asInstanceOf[Option[scala.collection.immutable.List[String]]].isEmpty) (scala.collection.immutable.Nil, c.asInstanceOf[Char])
-            else (s.asInstanceOf[Option[scala.collection.immutable.List[String]]].get, c.asInstanceOf[Char])
+            if (s.asInstanceOf[Option[StarMatch[String]]].isEmpty) (StarMatch("None"), c.asInstanceOf[Char])
+            else (s.asInstanceOf[Option[StarMatch[String]]].get, c.asInstanceOf[Char])
         }
     }
 
-    val myPattern8: String => Option[{ ConsA(??? : Option[scala.collection.immutable.List[Int]], ConsA(??? : Char, NilA)) }] = compileRegex(Cons('(', Cons('1', Cons('2', Cons(')', Cons('*', Cons('(', Cons('c', Cons(')', Nil)))))))))
-    val r8: (scala.collection.immutable.List[Int], Char) = (myPattern8("12121212c"): @unchecked) match {
-        case None => (scala.collection.immutable.Nil, 'n')
+    val myPattern8: String => Option[{ ConsA(??? : Option[StarMatch[Int]], ConsA(??? : Char, NilA)) }] = compileRegex(Cons('(', Cons('1', Cons('2', Cons(')', Cons('*', Cons('(', Cons('c', Cons(')', Nil)))))))))
+    val r8: (StarMatch[Int], Char) = (myPattern8("12121212c"): @unchecked) match {
+        case None => (StarMatch(0), 'n')
         case Some(ConsA(s, ConsA(c, NilA))) => {
-            if (s.asInstanceOf[Option[scala.collection.immutable.List[Int]]].isEmpty) (scala.collection.immutable.Nil, c.asInstanceOf[Char])
-            else (s.asInstanceOf[Option[scala.collection.immutable.List[Int]]].get, c.asInstanceOf[Char])
+            if (s.asInstanceOf[Option[StarMatch[Int]]].isEmpty) (StarMatch(0), c.asInstanceOf[Char])
+            else (s.asInstanceOf[Option[StarMatch[Int]]].get, c.asInstanceOf[Char])
         }
     }
 
-    val myPattern9: String => Option[{ ConsA(??? : Int, ConsA(??? : Option[scala.collection.immutable.List[Char]], NilA)) }] = compileRegex(Cons('(', Cons('1', Cons('2', Cons(')', Cons('(', Cons('c', Cons(')', Cons('*', Nil)))))))))
-    val r9: (Int, scala.collection.immutable.List[Char]) = (myPattern9("12ccc"): @unchecked) match {
-        case None => (0, scala.collection.immutable.Nil)
+    val myPattern9: String => Option[{ ConsA(??? : Int, ConsA(??? : Option[StarMatch[Char]], NilA)) }] = compileRegex(Cons('(', Cons('1', Cons('2', Cons(')', Cons('(', Cons('c', Cons(')', Cons('*', Nil)))))))))
+    val r9: (Int, StarMatch[Char]) = (myPattern9("12ccc"): @unchecked) match {
+        case None => (0, StarMatch('n'))
         case Some(ConsA(s, ConsA(c, NilA))) => {
-            if (c.asInstanceOf[Option[scala.collection.immutable.List[Char]]].isEmpty) (0, scala.collection.immutable.Nil)
-            else (s.asInstanceOf[Int], c.asInstanceOf[Option[scala.collection.immutable.List[Char]]].get)
+            if (c.asInstanceOf[Option[StarMatch[Char]]].isEmpty) (0, StarMatch('n'))
+            else (s.asInstanceOf[Int], c.asInstanceOf[Option[StarMatch[Char]]].get)
         }
     }
 
@@ -291,14 +285,14 @@ object Regex {
         assert(r4 == "s0", s"Found $r4, expected s0")
         assert(r5 == "ab09", s"Found $r5, expected ab09")
         assert(r6 == ("ab", 'c'), s"Found $r6, expected (ab, c)")
-        assert(r7 == (List("ab", "ab"), 'c'), s"Found $r7, expected (List(ab, ab), c)")
-        assert(r8 == (List(12, 12, 12, 12), 'c'), s"Found $r8, expected (List(12, 12, 12, 12), c)")
-        assert(r9 == (12, List('c', 'c', 'c')), s"Found $r9, expected (12, List(c, c, c))")
+        assert(r7 == (StarMatch("ab"), 'c'), s"Found $r7, expected (StarMatch(ab), c)")
+        assert(r8 == (StarMatch(12), 'c'), s"Found $r8, expected (StarMatch(12), c)")
+        assert(r9 == (12, StarMatch('c')), s"Found $r9, expected (12, StarMatch(c))")
     }
 }
 
 object RegexTests {
-    import Regex.compileRegex
+    import Regex._
     import ListCharConcat._
 
     val x1: String => Option[{ ConsA(??? : String, NilA) }] = compileRegex(Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Nil))))))))
@@ -335,11 +329,11 @@ object RegexTests {
 
     val x17: String => Option[{ ConsA(??? : Option[Int], ConsA(??? : Option[Char], NilA)) }] = compileRegex(Cons('(', Cons('1', Cons(')', Cons('?', Cons('(', Cons('c', Cons(')', Cons('?', Nil)))))))))
 
-    val x18: String => Option[{ ConsA(??? : Option[scala.collection.immutable.List[String]], ConsA(??? : Char, NilA)) }] = compileRegex(Cons('(', Cons('a', Cons('b', Cons(')', Cons('*', Cons('(', Cons('c', Cons(')', Nil)))))))))
+    val x18: String => Option[{ ConsA(??? : Option[StarMatch[String]], ConsA(??? : Char, NilA)) }] = compileRegex(Cons('(', Cons('a', Cons('b', Cons(')', Cons('*', Cons('(', Cons('c', Cons(')', Nil)))))))))
 
-    val x19: String => Option[{ ConsA(??? : Option[scala.collection.immutable.List[Char]], ConsA(??? : Char, NilA)) }] = compileRegex(Cons('(', Cons('a', Cons(')', Cons('*', Cons('(', Cons('c', Cons(')', Nil))))))))
+    val x19: String => Option[{ ConsA(??? : Option[StarMatch[Char]], ConsA(??? : Char, NilA)) }] = compileRegex(Cons('(', Cons('a', Cons(')', Cons('*', Cons('(', Cons('c', Cons(')', Nil))))))))
 
-    val x20: String => Option[{ ConsA(??? : Option[scala.collection.immutable.List[Int]], ConsA(??? : Char, NilA)) }] = compileRegex(Cons('(', Cons('1', Cons(')', Cons('*', Cons('(', Cons('c', Cons(')', Nil))))))))
+    val x20: String => Option[{ ConsA(??? : Option[StarMatch[Int]], ConsA(??? : Char, NilA)) }] = compileRegex(Cons('(', Cons('1', Cons(')', Cons('*', Cons('(', Cons('c', Cons(')', Nil))))))))
 
-    val x21: String => Option[{ ConsA(??? : Option[scala.collection.immutable.List[Int]], ConsA(??? : Option[scala.collection.immutable.List[Char]], NilA)) }] = compileRegex(Cons('(', Cons('1', Cons(')', Cons('*', Cons('(', Cons('c', Cons(')', Cons('*', Nil)))))))))
+    val x21: String => Option[{ ConsA(??? : Option[StarMatch[Int]], ConsA(??? : Option[StarMatch[Char]], NilA)) }] = compileRegex(Cons('(', Cons('1', Cons(')', Cons('*', Cons('(', Cons('c', Cons(')', Cons('*', Nil)))))))))
 }
