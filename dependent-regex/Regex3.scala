@@ -74,5 +74,14 @@ object CheckParens {
 }
 
 object Regex {
+    import ListCharConcat._
+    import CheckParens._
 
+    type M[T] = T match {
+        case List => CheckParens[List]
+    }
+
+    def compileRegex[T <: List](s: T): M[T] = {
+
+    }.asInstanceOf[M[T]]
 }
