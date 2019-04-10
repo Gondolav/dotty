@@ -87,7 +87,7 @@ object CheckParens {
     val notBalanced1: false = checkParens(Cons('(', Cons('(', Cons(')', Nil))))
     val notBalanced2: false = checkParens(Cons('(', Cons('(', Cons(')', Cons(')', Cons(')', Cons('(', Nil)))))))
 
-    val balancedBrackets1: true = checkParens(Cons('[', Cons('[', Cons(']', Cons(']', Nil)))))
+    val balancedBrackets1: true = checkBrackets(Cons('[', Cons('[', Cons(']', Cons(']', Nil)))))
 }
 
 object Regex {

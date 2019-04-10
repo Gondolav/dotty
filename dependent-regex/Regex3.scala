@@ -36,26 +36,30 @@ object CheckParens {
     import Nat._
 
     type CheckParens[Input <: List] = Input match {
-        case _ => CheckParens0[Input, Zero]
+        case _ => Check[Input, Zero, '(', ')']
     }
 
-    type CheckParens0[Input <: List, Opened <: Nat] = Input match {
+    type CheckBrackets[Input <: List] = Input match {
+        case _ => Check[Input, Zero, '[', ']']
+    }
+
+    type Check[Input <: List, Opened <: Nat, Open <: Char, Close <: Char] = Input match {
         case Nil.type => Opened match {
             case Zero => true
             case _ => false
         }
-        case Cons['(', xs] => Opened match {
-            case Pred[o] => CheckParens0[xs, o]
-            case _ => CheckParens0[xs, Suc[Opened]]
+        case Cons[Open, xs] => Opened match {
+            case Pred[o] => Check[xs, o, Open, Close]
+            case _ => Check[xs, Suc[Opened], Open, Close]
         }
-        case Cons[')', xs] => Opened match {
+        case Cons[Close, xs] => Opened match {
                 case Zero => false
                 case _ => Opened match {
-                    case Suc[o] => CheckParens0[xs, o]
-                    case _ => CheckParens0[xs, Pred[Opened]]
+                    case Suc[o] => Check[xs, o, Open, Close]
+                    case _ => Check[xs, Pred[Opened], Open, Close]
                 }
             }
-        case Cons[_, xs] => CheckParens0[xs, Opened]
+        case Cons[_, xs] => Check[xs, Opened, Open, Close]
     }
 
         val balancedEmpty: CheckParens[Nil.type] = true
@@ -66,5 +70,9 @@ object CheckParens {
         val notBalanced1: CheckParens[Cons['(', Cons['(', Cons[')', Nil.type]]]] = false
         val notBalanced2: CheckParens[Cons['(', Cons['(', Cons[')', Cons[')', Cons[')', Cons['(', Nil.type]]]]]]] = false
 
-        // val balancedBrackets1: true = checkBrackets(Cons('[', Cons('[', Cons(']', Cons(']', Nil)))))
+        val balancedBrackets1: CheckBrackets[Cons['[', Cons['[', Cons[']', Cons[']', Nil.type]]]]] = true
+}
+
+object Regex {
+
 }
