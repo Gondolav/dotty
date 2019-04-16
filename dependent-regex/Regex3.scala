@@ -10,38 +10,22 @@ object ListCharConcat {
 }
 
 object Nat {
-    sealed trait Nat {
-        type N <: Nat
-    }
+    sealed trait Nat
 
-    class Zero extends Nat {
-        type N = Zero
-    }
+    class Zero extends Nat
 
-    class Suc[P <: Nat] extends Nat {
-        type N = P match {
-            case Pred[Suc[P]] => P
-            case _ => Suc[P]
-        }
-    }
+    class Suc[P <: Nat] extends Nat
 
-    class Pred[P <: Nat] extends Nat {
-        type N = Pred[P]
-    }
-
+    class Pred[P <: Nat] extends Nat
 }
 
 object CheckParens {
     import ListCharConcat._
     import Nat._
 
-    type CheckParens[Input <: List] = Input match {
-        case _ => Check[Input, Zero, '(', ')']
-    }
+    type CheckParens[Input <: List] = Check[Input, Zero, '(', ')']
 
-    type CheckBrackets[Input <: List] = Input match {
-        case _ => Check[Input, Zero, '[', ']']
-    }
+    type CheckBrackets[Input <: List] = Check[Input, Zero, '[', ']']
 
     type Check[Input <: List, Opened <: Nat, Open <: Char, Close <: Char] = Input match {
         case Nil.type => Opened match {
@@ -77,11 +61,72 @@ object Regex {
     import ListCharConcat._
     import CheckParens._
 
-    type M[T] = T match {
-        case List => CheckParens[List]
+    sealed trait Type
+    case object Str extends Type
+    case object Integ extends Type
+    case object Chr extends Type
+    case object Empty extends Type
+    case class Optional(tp: Type) extends Type
+    case class Star(tp: Type) extends Type
+
+    case object RegexError
+    case class StarMatch[T](m: T)
+
+    type CompileRegex[Input <: List] = CheckParens[Input] match {
+        case true => Compile[Input, Empty.type, 0, false, 0, Nil.type, Input]
+        case false => RegexError.type
     }
 
-    def compileRegex[T <: List](s: T): M[T] = {
+    // can probably remove CachedRegex in all match types
+    type Compile[Input <: List, CurrType <: Type, Chars <: Int, CharClass <: Boolean, Classes <: Int, GroupsTypesRepr <: List, CachedRegex <: List] = CharClass match {
+        case false => Input match {
+            case Nil.type => ReturnType[CachedRegex, GroupsTypesRepr]
+            case Cons['[', xs] => Compile[xs, CurrType, Chars, true, Classes + 1, GroupsTypesRepr, CachedRegex]
+            case Cons['(', xs] => Compile[xs, Empty.type, 0, false, 0, GroupsTypesRepr, CachedRegex]
+            case Cons[')', xs] => Compile[xs, CurrType, Chars, CharClass, Classes, AddTypeToList[currType, groupsTypesRepr, chars], CachedRegex]
+            case Cons['?', xs] => Compile[xs, CurrType, Chars, CharClass, Classes, AddTypeToList[Optional[currType], GroupsTypesRepr.asInstanceOf[Cons].init, Chars], CachedRegex]
+            case Cons['*', xs] => Compile[xs, CurrType, Chars, CharClass, Classes, AddTypeToList[Star[currType], GroupsTypesRepr.asInstanceOf[Cons].init, Chars], CachedRegex]
+            case Cons[x, xs] => // TODO
+        }
+        case true => CheckBrackets[Input] match {
+            case false => RegexError.type
+            case true => CompileCharClass[Input, Empty.type, 0, false, 0, Nil.type, Input, ' ']
+        }
+    }
 
-    }.asInstanceOf[M[T]]
+    type CompileCharClass[Input <: List, CurrType <: Type, Chars <: Int, CharClass <: Boolean, Classes <: Int, GroupsTypesRepr <: List, CachedRegex <: List, FirstElemInClass <: Char] = {
+        // TODO
+    }
+
+    type ReturnType[CachedRegex <: String, GroupsTypesRepr <: List] = String => Option[ToTypesList[GroupsTypesRepr]]
+
+    type ToTypesList[GroupsTypesRepr <: List] = GroupsTypesRepr match {
+        case Nil.type => Nil.type
+        case Cons[x, xs] => x match {
+            case 'C' => Cons[x, ToTypesList[xs]]
+            case 'S' => Cons["s", ToTypesList[xs]]
+            case 'H' => Cons[Some['c'], ToTypesList[xs]]
+            case 'T' => Cons[Some["s"], ToTypesList[xs]]
+            case 'N' => Cons[Some[0], ToTypesList[xs]]
+            case 'R' => Cons[Some[StarMatch['c']], ToTypesList[xs]]
+            case 'G' => Cons[Some[StarMatch["s"]], ToTypesList[xs]]
+            case _ => Cons[Some[StarMatch[0]], ToTypesList[xs]]
+        }
+    }
+
+    def compileRegex[Input <: List](s: Input): CompileRegex[Input] = {
+
+    }.asInstanceOf[CompileRegex[Input]]
+
+    def compile[Input <: List, CurrType <: Type, Chars <: Int, CharClass <: Boolean, Classes <: Int, GroupsTypesRepr <: List, CachedRegex <: List](s: Input, currType: Type, chars: Int, charClass: Boolean, classes: Int, groupsTypesRepr: List, cachedRegex: => List): Compile[Input, CurrType, Chars, CharClass, Classes, GroupsTypesRepr, CachedRegex] = {
+        // TODO
+    }.asInstanceOf[Compile[Input, CurrType, Chars, CharClass, Classes, GroupsTypesRepr, CachedRegex]]
+
+}
+
+object RegexTests {
+    import ListCharConcat._
+    import Regex._
+
+    val x1: RegexError.type = compileRegex[Cons['(', Nil.type]](Cons('(', Nil))
 }
