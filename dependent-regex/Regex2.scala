@@ -168,7 +168,7 @@ object Regex {
         else l ++ Cons('I', Nil)
     }
 
-    def toListA(s: Seq[Any]): ListA = {
+    private def toListA(s: Seq[Any]): ListA = {
         if (s.isEmpty) NilA
         else ConsA(s.head, toListA(s.tail))
     }
