@@ -1,9 +1,15 @@
 object ListCharConcat {
     import Regex.StarMatch
     sealed trait List {
-        def toScalaList: scala.collection.immutable.List[Any] =
-            if (this.isInstanceOf[Nil.type]) Nil.empty
-            else this.asInstanceOf[Cons].head :: this.asInstanceOf[Cons].tail.toScalaList
+        def ++(that: List): List = this match {
+            case Nil => that
+            case Cons(x, xs) => Cons(x, xs ++ that)
+        }
+
+        def toScalaList: scala.collection.immutable.List[Any] = this match {
+            case Nil => scala.collection.immutable.Nil
+            case Cons(x, xs) => x :: xs.toScalaList
+        }
     }
     case object Nil extends List
     case class Cons[T, Tail <: List](head: T, tail: Tail) extends List
@@ -34,9 +40,9 @@ object Nat {
 
     class Zero extends Nat
 
-    class Suc[P <: Nat] extends Nat
+    class Suc[N <: Nat] extends Nat
 
-    class Pred[P <: Nat] extends Nat
+    class Pred[N <: Nat] extends Nat
 }
 
 object CheckParens {
@@ -100,7 +106,7 @@ object Regex {
 
     type Compile[Input <: List, CurrType <: Type, Chars <: Nat, CharClass <: Boolean, Classes <: Nat, GroupsTypesRepr <: List, CachedRegex <: List] = CharClass match {
         case false => Input match {
-            case Nil.type => String => Option[ToTypesList[GroupsTypesRepr]]
+            case Nil.type => ReturnType[GroupsTypesRepr]
             case Cons['[', xs] => Compile[xs, CurrType, Chars, true, Suc[Classes], GroupsTypesRepr, CachedRegex]
             case Cons['(', xs] => Compile[xs, Empty.type, Zero, false, Zero, GroupsTypesRepr, CachedRegex]
             case Cons[')', xs] => xs match {
@@ -143,28 +149,18 @@ object Regex {
     }
 
     type AddTypeToList[T <: Type, L <: List, Chars <: Nat] = T match {
-        case Optional[t] => t match {
-            case Chr.type => Concat[L, Cons['H', Nil.type]]
-            case Str.type => Chars match {
-                case Suc[Zero] => Concat[L, Cons['H', Nil.type]]
-                case _ => Concat[L, Cons['T', Nil.type]]
-            }
-            case _ => Concat[L, Cons['N', Nil.type]]
-        }
-        case Star[t] => t match {
-            case Chr.type => Concat[L, Cons['R', Nil.type]]
-            case Str.type => Chars match {
-                case Suc[Zero] => Concat[L, Cons['R', Nil.type]]
-                case _ => Concat[L, Cons['G', Nil.type]]
-            }
-            case _ => Concat[L, Cons['E', Nil.type]]
-        }
-        case Chr.type => Concat[L, Cons['C', Nil.type]]
+        case Optional[t] => AddType[t, L, Chars, Cons['H', Nil.type], Cons['T', Nil.type], Cons['N', Nil.type]]
+        case Star[t] => AddType[t, L, Chars, Cons['R', Nil.type], Cons['G', Nil.type], Cons['E', Nil.type]]
+        case _ => AddType[T, L, Chars, Cons['C', Nil.type], Cons['S', Nil.type], Cons['I', Nil.type]]
+    }
+
+    type AddType[T <: Type, L <: List, Chars <: Nat, ReprC <: List, ReprS <: List, ReprI <: List] = T match {
+        case Chr.type => Concat[L, ReprC]
         case Str.type => Chars match {
-                case Suc[Zero] => Concat[L, Cons['C', Nil.type]]
-                case _ => Concat[L, Cons['S', Nil.type]]
+                case Suc[Zero] => Concat[L, ReprC]
+                case _ => Concat[L, ReprS]
             }
-        case _ => Concat[L, Cons['I', Nil.type]]
+        case _ => Concat[L, ReprI]
     }
 
     type IsDigit[C <: Char] = C match {
@@ -181,13 +177,179 @@ object Regex {
         case _ => false
     }
 
+    type ReturnType[GroupsTypesRepr <: List] = String => Option[ToTypesList[GroupsTypesRepr]]
+
     def compileRegex[Input <: List](s: Input): CompileRegex[Input] = {
-        compile[Input, Empty.type, Zero, false, Zero, Nil.type, Input](s, Empty, 0, false, 0, Nil, s)
+        val regex = s.toScalaList
+        compile(regex, Empty, 0, false, 0, Nil, regex)
     }.asInstanceOf[CompileRegex[Input]]
 
-    def compile[Input <: List, CurrType <: Type, Chars <: Nat, CharClass <: Boolean, Classes <: Nat, GroupsTypesRepr <: List, CachedRegex <: List](s: Input, currType: CurrType, chars: Int, charClass: CharClass, classes: Int, groupsTypesRepr: GroupsTypesRepr, cachedRegex: => CachedRegex): Compile[Input, CurrType, Chars, CharClass, Classes, GroupsTypesRepr, CachedRegex] = {
-        // TODO
+    private def compile[Input <: List, CurrType <: Type, Chars <: Nat, CharClass <: Boolean, Classes <: Nat, GroupsTypesRepr <: List, CachedRegex <: List](s: scala.collection.immutable.List[Any], currType: CurrType, chars: Int, charClass: CharClass, classes: Int, groupsTypesRepr: GroupsTypesRepr, cachedRegex: => scala.collection.immutable.List[Any]): Compile[Input, CurrType, Chars, CharClass, Classes, GroupsTypesRepr, CachedRegex] = {
+        if (charClass) compileCharClass(s, currType, chars, charClass, classes, groupsTypesRepr, ' ', cachedRegex)
+        else s match {
+            case scala.collection.immutable.Nil => returnType[GroupsTypesRepr](cachedRegex, groupsTypesRepr.toScalaList)
+            case '[' :: xs => compile(xs, currType, chars, true, classes + 1, groupsTypesRepr, cachedRegex)
+            case '(' :: xs => compile(xs, Empty, 0, false, 0, groupsTypesRepr, cachedRegex)
+            case ')' :: xs => xs match {
+                case '?' :: xss => compile(xss, currType, chars, charClass, classes, addTypeToList(Optional(currType), groupsTypesRepr, chars), cachedRegex)
+                case '*' :: xss => compile(xss, currType, chars, charClass, classes, addTypeToList(Star(currType), groupsTypesRepr, chars), cachedRegex)
+                case _ => compile(xs, currType, chars, charClass, classes, addTypeToList(currType, groupsTypesRepr, chars), cachedRegex)
+            }
+            case x :: xs =>
+                if (x.asInstanceOf[Char].isDigit && (currType.isInstanceOf[Empty.type] || currType.isInstanceOf[Integ.type])) compile(xs, Integ, chars, charClass, classes, groupsTypesRepr, cachedRegex)
+                else compile(xs, Str, chars + 1, charClass, classes, groupsTypesRepr, cachedRegex)
+        }
     }.asInstanceOf[Compile[Input, CurrType, Chars, CharClass, Classes, GroupsTypesRepr, CachedRegex]]
+
+    private def compileCharClass[Input <: List, CurrType <: Type, Chars <: Nat, CharClass <: Boolean, Classes <: Nat, GroupsTypesRepr <: List, FirstElemInClass <: Char, CachedRegex](s: scala.collection.immutable.List[Any], currType: CurrType, chars: Int, charClass: CharClass, classes: Int, groupsTypesRepr: GroupsTypesRepr, firstElemInClass: Char, cachedRegex: => scala.collection.immutable.List[Any]): CompileCharClass[Input, CurrType, Chars, CharClass, Classes, GroupsTypesRepr, FirstElemInClass, CachedRegex] = {
+        s match {
+            case '-' :: xs => compileCharClass(xs, currType, chars, charClass, classes, groupsTypesRepr, firstElemInClass, cachedRegex)
+            case ']' :: xs =>
+                if (classes == 1 && currType.isInstanceOf[Str.type]) compile(xs, Chr, chars, false, classes, groupsTypesRepr, cachedRegex)
+                else compile(xs, currType, chars, false, classes, groupsTypesRepr, cachedRegex)
+            case x :: xs =>
+                if (firstElemInClass > x.asInstanceOf[Char]) RegexError
+                else if (x.asInstanceOf[Char].isDigit && (currType.isInstanceOf[Empty.type] || currType.isInstanceOf[Integ.type])) compileCharClass(xs, Integ, chars, charClass, classes, groupsTypesRepr, x.asInstanceOf[Char], cachedRegex)
+                else compileCharClass(xs, Str, chars, charClass, classes, groupsTypesRepr, x.asInstanceOf[Char], cachedRegex)
+        }
+    }.asInstanceOf[CompileCharClass[Input, CurrType, Chars, CharClass, Classes, GroupsTypesRepr, FirstElemInClass, CachedRegex]]
+
+    private def addTypeToList(t: Type, l: List, chars: Int): List = t match {
+        case Optional(tp) => addType(tp, l, chars, Cons('H', Nil), Cons('T', Nil), Cons('N', Nil))
+        case Star(tp) => addType(tp, l, chars, Cons('R', Nil), Cons('G', Nil), Cons('E', Nil))
+        case _ => addType(t, l, chars, Cons('C', Nil), Cons('S', Nil), Cons('I', Nil))
+    }
+
+    private def addType(t: Type, l: List, chars: Int, reprC: List, reprS: List, reprI: List) = t match {
+        case Chr => l ++ reprC
+        case Str =>
+            if (chars == 1) l ++ reprC
+            else l ++ reprS
+        case _ => l ++ reprI
+    }
+
+    private def toList(s: Seq[Any]): List = {
+        if (s.isEmpty) Nil
+        else Cons(s.head, toList(s.tail))
+    }
+
+    private def returnType[ReturnTypesRepr <: List](regex: scala.collection.immutable.List[Any], returnTypesRepr: scala.collection.immutable.List[Any]): ReturnType[ReturnTypesRepr] =
+        {
+            input: String =>
+                val firstMatchOpt = regex.toString.r.findFirstMatchIn(input)
+                if (firstMatchOpt.isEmpty) None
+                else {
+                    val firstMatch = firstMatchOpt.get
+                    Some(toList(returnTypesRepr.zipWithIndex.map {
+                            case (s) if s._1 == 'S' => firstMatch.group(s._2 + 1).toString
+                            case (s) if s._1 == 'I' => firstMatch.group(s._2 + 1).toInt
+                            case (s) if s._1 == 'C' => firstMatch.group(s._2 + 1)(0)
+                            case (s) if s._1 == 'T' =>
+                                val group = firstMatch.group(s._2 + 1)
+                                if (group == null) None
+                                else Some(group.toString)
+                            case (s) if s._1 == 'G' =>
+                                val group = firstMatch.group(s._2 + 1)
+                                if (group == null) None
+                                else Some(StarMatch[String](group.toString))
+                            case (s) if s._1 == 'N' =>
+                                val group = firstMatch.group(s._2 + 1)
+                                if (group == null) None
+                                else Some(group.toInt)
+                            case (s) if s._1 == 'E' =>
+                                val group = firstMatch.group(s._2 + 1)
+                                if (group == null) None
+                                else Some(StarMatch[Int](group.toInt))
+                            case (s) if s._1 == 'H' =>
+                                val group = firstMatch.group(s._2 + 1)
+                                if (group == null) None
+                                else Some(group(0))
+                            case (s) if s._1 == 'R' =>
+                                val group = firstMatch.group(s._2 + 1)
+                                if (group == null) None
+                                else Some(StarMatch[Char](group(0)))
+                        }))
+                    }
+        }.asInstanceOf[ReturnType[ReturnTypesRepr]]
+
+
+    val myPattern1: String => Option[Cons[String, Cons[Char, Nil.type]]] = compileRegex[Cons['(', Cons['a', Cons['s', Cons['d', Cons['f', Cons['s', Cons[')', Cons['(', Cons['a', Cons[')', Nil.type]]]]]]]]]]](Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Cons('(', Cons('a', Cons(')', Nil)))))))))))
+    val r1: String = (myPattern1("asdfsa"): @unchecked) match {
+        case None => "none"
+        case Some(Cons(s, Cons(c, Nil))) => s.asInstanceOf[String]
+    }
+
+    val myPattern2: String => Option[Cons[Int, Nil.type]] = compileRegex[Cons['(', Cons['1', Cons['2', Cons['3', Cons[')', Nil.type]]]]]](Cons('(', Cons('1', Cons('2', Cons('3', Cons(')', Nil))))))
+    val r2: Int = (myPattern2("123"): @unchecked) match {
+        case None => -1
+        case Some(Cons(i: Int, Nil)) => i
+    }
+
+    val myPattern3: String => Option[Cons[Char, Nil.type]] = compileRegex[Cons['(', Cons['[', Cons['a', Cons['-', Cons['z', Cons[']', Cons[')', Nil.type]]]]]]]](Cons('(', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons(')', Nil))))))))
+    val r3: Char = (myPattern3("f"): @unchecked) match {
+        case None => 'n'
+        case Some(Cons(c, Nil)) => c.asInstanceOf[Char]
+    }
+
+    val myPattern4: String => Option[Cons[String, Nil.type]] = compileRegex[Cons['(', Cons['[', Cons['a', Cons['-', Cons['z', Cons[']', Cons['[', Cons['0', Cons['-', Cons['9', Cons[']', Cons[')', Nil.type]]]]]]]]]]]]](Cons('(', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons(')', Nil)))))))))))))
+    val r4: String = (myPattern4("s0"): @unchecked) match {
+        case None => "none"
+        case Some(Cons(s, Nil)) => s.asInstanceOf[String]
+    }
+
+    val myPattern5: String => Option[Cons[String, Nil.type]] = compileRegex[Cons['(', Cons['a', Cons['[', Cons['a', Cons['-', Cons['b', Cons[']', Cons['0', Cons['[', Cons['8', Cons['-', Cons['9', Cons[']', Cons[')', Nil.type]]]]]]]]]]]]]]](Cons('(', Cons('a', Cons('[', Cons('a', Cons('-', Cons('b', Cons(']', Cons('0', Cons('[', Cons('8', Cons('-', Cons('9', Cons(']', Cons(')', Nil)))))))))))))))
+    val r5: String = (myPattern5("ab09"): @unchecked) match {
+        case None => "none"
+        case Some(Cons(s, Nil)) => s.asInstanceOf[String]
+    }
+
+    val myPattern6: String => Option[Cons[Option[String], Cons[Char, Nil.type]]] = compileRegex[Cons['(', Cons['a', Cons['b', Cons[')', Cons['?', Cons['(', Cons['c', Cons[')', Nil.type]]]]]]]]](Cons('(', Cons('a', Cons('b', Cons(')', Cons('?', Cons('(', Cons('c', Cons(')', Nil)))))))))
+    val r6: (String, Char) = (myPattern6("abc"): @unchecked) match {
+        case None => ("none", 'n')
+        case Some(Cons(s, Cons(c, Nil))) => {
+            if (s.asInstanceOf[Option[String]].isEmpty) ("none", c.asInstanceOf[Char])
+            else (s.asInstanceOf[Option[String]].get, c.asInstanceOf[Char])
+        }
+    }
+
+    val myPattern7: String => Option[Cons[Option[StarMatch[String]], Cons[Char, Nil.type]]] = compileRegex[Cons['(', Cons['a', Cons['b', Cons[')', Cons['*', Cons['(', Cons['c', Cons[')', Nil.type]]]]]]]]](Cons('(', Cons('a', Cons('b', Cons(')', Cons('*', Cons('(', Cons('c', Cons(')', Nil)))))))))
+    val r7: (StarMatch[String], Char) = (myPattern7("ababc"): @unchecked) match {
+        case None => (StarMatch("None"), 'n')
+        case Some(Cons(s, Cons(c, Nil))) => {
+            if (s.asInstanceOf[Option[StarMatch[String]]].isEmpty) (StarMatch("None"), c.asInstanceOf[Char])
+            else (s.asInstanceOf[Option[StarMatch[String]]].get, c.asInstanceOf[Char])
+        }
+    }
+
+    val myPattern8: String => Option[Cons[Option[StarMatch[Int]], Cons[Char, Nil.type]]] = compileRegex[Cons['(', Cons['1', Cons['2', Cons[')', Cons['*', Cons['(', Cons['c', Cons[')', Nil.type]]]]]]]]](Cons('(', Cons('1', Cons('2', Cons(')', Cons('*', Cons('(', Cons('c', Cons(')', Nil)))))))))
+    val r8: (StarMatch[Int], Char) = (myPattern8("12121212c"): @unchecked) match {
+        case None => (StarMatch(0), 'n')
+        case Some(Cons(s, Cons(c, Nil))) => {
+            if (s.asInstanceOf[Option[StarMatch[Int]]].isEmpty) (StarMatch(0), c.asInstanceOf[Char])
+            else (s.asInstanceOf[Option[StarMatch[Int]]].get, c.asInstanceOf[Char])
+        }
+    }
+
+    val myPattern9: String => Option[Cons[Int, Cons[Option[StarMatch[Char]], Nil.type]]] = compileRegex[Cons['(', Cons['1', Cons['2', Cons[')', Cons['(', Cons['c', Cons[')', Cons['*', Nil.type]]]]]]]]](Cons('(', Cons('1', Cons('2', Cons(')', Cons('(', Cons('c', Cons(')', Cons('*', Nil)))))))))
+    val r9: (Int, StarMatch[Char]) = (myPattern9("12ccc"): @unchecked) match {
+        case None => (0, StarMatch('n'))
+        case Some(Cons(s, Cons(c, Nil))) => {
+            if (c.asInstanceOf[Option[StarMatch[Char]]].isEmpty) (0, StarMatch('n'))
+            else (s.asInstanceOf[Int], c.asInstanceOf[Option[StarMatch[Char]]].get)
+        }
+    }
+
+    def main(args: Array[String]): Unit = {
+        assert(r1 == "asdfs", s"Found $r1, expected asdfs")
+        assert(r2 == 123, s"Found $r2, expected 123")
+        assert(r3 == 'f', s"Found $r3, expected f")
+        assert(r4 == "s0", s"Found $r4, expected s0")
+        assert(r5 == "ab09", s"Found $r5, expected ab09")
+        assert(r6 == ("ab", 'c'), s"Found $r6, expected (ab, c)")
+        assert(r7 == (StarMatch("ab"), 'c'), s"Found $r7, expected (StarMatch(ab), c)")
+        assert(r8 == (StarMatch(12), 'c'), s"Found $r8, expected (StarMatch(12), c)")
+        assert(r9 == (12, StarMatch('c')), s"Found $r9, expected (12, StarMatch(c))")
+    }
 }
 
 object RegexTests {
