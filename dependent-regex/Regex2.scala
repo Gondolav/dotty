@@ -1,27 +1,35 @@
-object ListCharConcat {
-    sealed trait List {
-        dependent def ++(that: List): List =
+object Lst {
+    sealed trait LstChar {
+        /** Returns a new list resulting from the concatenation of this list with the given one.
+         *
+         *  @param that the list to concatenate.
+         *  @return a list containing the elements from the left hand operand followed by the elements from the right hand operand.
+         */
+        dependent def ++(that: LstChar): LstChar =
             if (this.isInstanceOf[Nil.type]) that
             else Cons(this.asInstanceOf[Cons].head, this.asInstanceOf[Cons].tail ++ that)
 
-        dependent def init: List =
+        /** Returns a new list containing all elements of this collection except the last.
+         *
+         *  @return a list constisting of all elements of this collection except the last one.
+         */
+        dependent def init: LstChar =
             if (this.isInstanceOf[Nil.type]) throw new UnsupportedOperationException("init of empty list")
             else if (this.asInstanceOf[Cons].tail.isInstanceOf[Nil.type]) Nil
             else Cons(this.asInstanceOf[Cons].head, this.asInstanceOf[Cons].tail.init)
 
-        def toSeq: Seq[Char] = {
-            def toSeqAux(list: List, acc: Seq[Char]): Seq[Char] = {
-                if (list.isInstanceOf[Nil.type]) acc
-                else toSeqAux(list.asInstanceOf[Cons].tail, acc :+ list.asInstanceOf[Cons].head)
-            }
-
-            toSeqAux(this, Seq.empty[Char])
-        }
+        /** Converts this list to a scala.collection.immutable.List.
+         *
+         *  @return a scala.collection.immutable.List containing all elements of this list.
+         */
+        def toList: List[Char] =
+            if (this.isInstanceOf[Nil.type]) scala.collection.immutable.Nil
+            else this.asInstanceOf[Cons].head :: this.asInstanceOf[Cons].tail.toList
 
         override def toString: String = {
             val builder = StringBuilder.newBuilder
 
-            def toStringAux(list: List): Unit = {
+            def toStringAux(list: LstChar): Unit = {
                 if (!list.isInstanceOf[Nil.type]) {
                     builder.append(list.asInstanceOf[Cons].head)
                     toStringAux(list.asInstanceOf[Cons].tail)
@@ -32,11 +40,31 @@ object ListCharConcat {
             builder.toString
         }
 
-        dependent def toTypesList: ListA = {
+        /** Converts this list to a LstA.
+         *
+         *  @return a LstA containing all elements of this list.
+         */
+        dependent def toLstA: LstA = {
             if (this.isInstanceOf[Nil.type]) NilA
-            else ConsA(toType(this.asInstanceOf[Cons].head), this.asInstanceOf[Cons].tail.toTypesList)
+            else ConsA(toType(this.asInstanceOf[Cons].head), this.asInstanceOf[Cons].tail.toLstA)
         }
 
+        /** Converts the given char to an Option wrapping the type it represents.
+         *
+         *  Possible char-type mappings are:
+         *  - 'C' -> Char
+         *  - 'S' -> String
+         *  - 'I' -> Int
+         *  - 'H' -> Option[Char]
+         *  - 'T' -> Option[String]
+         *  - 'N' -> Option[Int]
+         *  - 'R' -> StarMatch[Char]
+         *  - 'G' -> StarMatch[String]
+         *  - 'E' -> StarMatch[Int]
+         *
+         *  @param c the char representation of a type.
+         *  @return the corresponding type wrapped in Some().
+         */
         dependent def toType(c: Char) = {
             import Regex.StarMatch
 
@@ -51,23 +79,20 @@ object ListCharConcat {
             else Some(StarMatch[Int](0))
         }
     }
-    dependent case object Nil extends List
-    dependent case class Cons(head: Char, tail: List) extends List
 
-    sealed trait ListA {
-        dependent def ++(that: ListA): ListA =
-            if (this.isInstanceOf[NilA.type]) that
-            else ConsA(this.asInstanceOf[ConsA].head, this.asInstanceOf[ConsA].tail ++ that)
-    }
-    dependent case object NilA extends ListA
-    dependent case class ConsA(head: Any, tail: ListA) extends ListA
+    dependent case object Nil extends LstChar
+    dependent case class Cons(head: Char, tail: LstChar) extends LstChar
+
+
+    sealed trait LstA
+    dependent case object NilA extends LstA
+    dependent case class ConsA(head: Any, tail: LstA) extends LstA
 }
 
+object CheckDelimiters {
+    import Lst._
 
-object CheckParens {
-    import ListCharConcat._
-
-    dependent private def check(cs: List, opened: Int, open: Char, close: Char): Boolean = {
+    dependent private def check(cs: LstChar, opened: Int, open: Char, close: Char): Boolean = {
         if (cs.isInstanceOf[Nil.type]) opened == 0
         else if (cs.asInstanceOf[Cons].head == open) check(cs.asInstanceOf[Cons].tail, opened + 1, open, close)
         else if (cs.asInstanceOf[Cons].head == close && opened < 1) false
@@ -75,9 +100,19 @@ object CheckParens {
         else check(cs.asInstanceOf[Cons].tail, opened, open, close)
     }
 
-    dependent def checkParens(s: List): Boolean = check(s, 0, '(', ')')
+    /** Returns true if the parentheses contained in the given string are balanced, false otherwise.
+     *
+     *  @param s the string containing the parentheses.
+     *  @return true if the parentheses are balanced, false otherwise.
+     */
+    dependent def checkParens(s: LstChar): Boolean = check(s, 0, '(', ')')
 
-    dependent def checkBrackets(s: List): Boolean = check(s, 0, '[', ']')
+    /** Returns true if the brackets contained in the given string are balanced, false otherwise.
+     *
+     *  @param s the string containing the brackets.
+     *  @return true if the brackets are balanced, false otherwise.
+     */
+    dependent def checkBrackets(s: LstChar): Boolean = check(s, 0, '[', ']')
 
     val balancedEmpty: true = checkParens(Nil)
     val balanced1: true = checkParens(Cons('(', Cons('(', Cons(')', Cons(')', Nil)))))
@@ -91,37 +126,31 @@ object CheckParens {
 }
 
 object Regex {
-    import ListCharConcat._
-    import CheckParens.{checkParens, checkBrackets}
+    import Lst._
+    import CheckDelimiters.{checkParens, checkBrackets}
 
     sealed trait Type
-    dependent case object Str extends Type {
-        override def toString(): String = "String"
-    }
-    dependent case object Integ extends Type {
-        override def toString(): String = "Int"
-    }
-    dependent case object Chr extends Type {
-        override def toString(): String = "Char"
-    }
-    dependent case object Empty extends Type {
-        override def toString(): String = "Empty"
-    }
-
+    dependent case object Str extends Type
+    dependent case object Integ extends Type
+    dependent case object Chr extends Type
+    dependent case object Empty extends Type
     dependent case class Optional(tp: Type) extends Type
-
     dependent case class Star(tp: Type) extends Type
 
     dependent case object RegexError
-
     case class StarMatch[T](m: T)
 
-    dependent def compileRegex(s: List): Any = {
+    /** Returns a compiled regular expression pattern for the given regex.
+     *
+     *  @param regex the regular expression to compile into a pattern.
+     *  @return a compiled regular expression pattern.
+     */
+    dependent def compileRegex(s: LstChar): Any = {
         if (checkParens(s)) compile(s, Empty, 0, false, 0, Nil, s)
         else RegexError
     }
 
-    dependent private def compile(s: List, currType: Type, chars: Int, charClass: Boolean, classes: Int, groupsTypesRepr: List, cachedRegex: => List): Any = {
+    dependent private def compile(s: LstChar, currType: Type, chars: Int, charClass: Boolean, classes: Int, groupsTypesRepr: LstChar, cachedRegex: => LstChar): Any = {
         if (s.isInstanceOf[Nil.type]) returnType(cachedRegex, groupsTypesRepr)
         else if (charClass) {
             if (checkBrackets(cachedRegex)) compileCharClass(s, currType, chars, charClass, classes, groupsTypesRepr, cachedRegex, ' ')
@@ -137,7 +166,7 @@ object Regex {
         }
     }
 
-    dependent private def compileCharClass(s: List, currType: Type, chars: Int, charClass: Boolean, classes: Int, groupsTypesRepr: List, cachedRegex: => List, firstElemInClass: Char): Any = {
+    dependent private def compileCharClass(s: LstChar, currType: Type, chars: Int, charClass: Boolean, classes: Int, groupsTypesRepr: LstChar, cachedRegex: => LstChar, firstElemInClass: Char): Any = {
         if (s.asInstanceOf[Cons].head == '-') compileCharClass(s.asInstanceOf[Cons].tail, currType, chars, charClass, classes, groupsTypesRepr, cachedRegex, firstElemInClass)
         else if (s.asInstanceOf[Cons].head == ']') {
             if (classes == 1 && currType.isInstanceOf[Str.type]) compile(s.asInstanceOf[Cons].tail, Chr, chars, false, classes, groupsTypesRepr, cachedRegex)
@@ -150,67 +179,67 @@ object Regex {
 
     dependent private def isDigit(c: Char): Boolean = '0' <= c && c <= '9'
 
-    dependent private def addTypeToList(t: Type, l: List, chars: Int): List = {
-        if (t.isInstanceOf[Optional]) {
-            val tp = t.asInstanceOf[Optional].tp
-            if (chars == 1 || tp.isInstanceOf[Chr.type]) l ++ Cons('H', Nil)
-            else if (tp.isInstanceOf[Str.type]) l ++ Cons('T', Nil)
-            else l ++ Cons('N', Nil)
-        }
-        else if (t.isInstanceOf[Star]) {
-            val tp = t.asInstanceOf[Star].tp
-            if (chars == 1 || tp.isInstanceOf[Chr.type]) l ++ Cons('R', Nil)
-            else if (tp.isInstanceOf[Str.type]) l ++ Cons('G', Nil)
-            else l ++ Cons('E', Nil)
-        }
-        else if (chars == 1 || t.isInstanceOf[Chr.type]) l ++ Cons('C', Nil)
-        else if (t.isInstanceOf[Str.type]) l ++ Cons('S', Nil)
-        else l ++ Cons('I', Nil)
+    // Adds the given type to the given list by concatenating to it its char representation
+    dependent private def addTypeToList(t: Type, l: LstChar, chars: Int): LstChar = {
+        if (t.isInstanceOf[Optional]) addType(t.asInstanceOf[Optional].tp, l, chars, Cons('H', Nil), Cons('T', Nil), Cons('N', Nil))
+        else if (t.isInstanceOf[Star]) addType(t.asInstanceOf[Star].tp, l, chars, Cons('R', Nil), Cons('G', Nil), Cons('E', Nil))
+        else addType(t, l, chars, Cons('C', Nil), Cons('S', Nil), Cons('I', Nil))
     }
 
-    private def toListA(s: Seq[Any]): ListA = {
+    dependent private def addType(t: Type, l: LstChar, chars: Int, reprC: LstChar, reprS: LstChar, reprI: LstChar): LstChar = {
+        if (t.isInstanceOf[Chr.type]) l ++ reprC
+        else if (t.isInstanceOf[Str.type]) {
+            if (chars == 1) l ++ reprC
+            else l ++ reprS
+        }
+        else l ++ reprI
+    }
+
+    // Converts the given sequence to a LstA
+    private def toLstA(s: Seq[Any]): LstA = {
         if (s.isEmpty) NilA
-        else ConsA(s.head, toListA(s.tail))
+        else ConsA(s.head, toLstA(s.tail))
     }
 
-    dependent private def returnType(regex: List, returnTypesRepr: List): String => Option[{ returnTypesRepr.toTypesList }] =
+    // Builds and returns the closure that can be used as a pattern to match a given string
+    dependent private def returnType(regex: LstChar, returnTypesRepr: LstChar): String => Option[{ returnTypesRepr.toLstA }] =
         {
             input: String =>
                 val firstMatchOpt = regex.toString.r.findFirstMatchIn(input)
                 if (firstMatchOpt.isEmpty) None
                 else {
                     val firstMatch = firstMatchOpt.get
-                    Some(toListA(returnTypesRepr.toSeq.zipWithIndex.map {
-                            case (s) if s._1 == 'S' => firstMatch.group(s._2 + 1).toString
-                            case (s) if s._1 == 'I' => firstMatch.group(s._2 + 1).toInt
-                            case (s) if s._1 == 'C' => firstMatch.group(s._2 + 1)(0)
+                    Some(toLstA(returnTypesRepr.toList.zipWithIndex.map {
+                            case (s) if s._1 == 'S' => firstMatch.group(s._2 + 1).toString // String
+                            case (s) if s._1 == 'I' => firstMatch.group(s._2 + 1).toInt // Int
+                            case (s) if s._1 == 'C' => firstMatch.group(s._2 + 1)(0) // Char
                             case (s) if s._1 == 'T' =>
                                 val group = firstMatch.group(s._2 + 1)
                                 if (group == null) None
-                                else Some(group.toString)
+                                else Some(group.toString) // Option[String]
                             case (s) if s._1 == 'G' =>
                                 val group = firstMatch.group(s._2 + 1)
                                 if (group == null) None
-                                else Some(StarMatch[String](group.toString))
+                                else Some(StarMatch[String](group.toString)) // StarMatch[String]
                             case (s) if s._1 == 'N' =>
                                 val group = firstMatch.group(s._2 + 1)
                                 if (group == null) None
-                                else Some(group.toInt)
+                                else Some(group.toInt) // Option[Int]
                             case (s) if s._1 == 'E' =>
                                 val group = firstMatch.group(s._2 + 1)
                                 if (group == null) None
-                                else Some(StarMatch[Int](group.toInt))
+                                else Some(StarMatch[Int](group.toInt)) // StarMatch[Int]
                             case (s) if s._1 == 'H' =>
                                 val group = firstMatch.group(s._2 + 1)
                                 if (group == null) None
-                                else Some(group(0))
+                                else Some(group(0)) // Option[Char]
                             case (s) if s._1 == 'R' =>
                                 val group = firstMatch.group(s._2 + 1)
                                 if (group == null) None
-                                else Some(StarMatch[Char](group(0)))
+                                else Some(StarMatch[Char](group(0))) // StarMatch[Char]
                         }))
                     }
-        }.asInstanceOf[String => Option[{ returnTypesRepr.toTypesList }]]
+        }.asInstanceOf[String => Option[{ returnTypesRepr.toLstA }]]
 
     val myPattern1: String => Option[{ ConsA(??? : String, ConsA(??? : Char, NilA)) }] = compileRegex(Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Cons('(', Cons('a', Cons(')', Nil)))))))))))
     val r1: String = (myPattern1("asdfsa"): @unchecked) match {
@@ -293,47 +322,27 @@ object Regex {
 
 object RegexTests {
     import Regex._
-    import ListCharConcat._
+    import Lst._
 
     val x1: String => Option[{ ConsA(??? : String, NilA) }] = compileRegex(Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Nil))))))))
-
     val x2: String => Option[{ ConsA(??? : Char, NilA) }] = compileRegex(Cons('(', Cons('a', Cons(')', Nil))))
-
     val x3: String => Option[{ ConsA(??? : Int, NilA) }] = compileRegex(Cons('(', Cons('1', Cons('2', Cons('3', Cons(')', Nil))))))
-
     val x4: String => Option[{ ConsA(??? : String, NilA) }] = compileRegex(Cons('(', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons(')', Nil)))))))))))))
-
     val x5: String => Option[{ ConsA(??? : Int, NilA) }] = compileRegex(Cons('(', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons(')', Nil)))))))))))))
-
     val x6: String => Option[{ ConsA(??? : Int, NilA) }] = compileRegex(Cons('(', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons(')', Nil))))))))
-
     val x7: String => Option[{ ConsA(??? : Char, NilA) }] = compileRegex(Cons('(', Cons('[', Cons('A', Cons('-', Cons('Z', Cons(']', Cons(')', Nil))))))))
-
     val x8: String => Option[{ ConsA(??? : String, ConsA(??? : Char, NilA)) }] = compileRegex(Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Cons('(', Cons('a', Cons(')', Nil)))))))))))
-
     val x9: String => Option[{ ConsA(??? : Int, ConsA(??? : String, NilA)) }] = compileRegex(Cons('(', Cons('1', Cons('2', Cons('3', Cons('4', Cons('5', Cons(')', Cons('(', Cons('a', Cons('b', Cons(')', Nil))))))))))))
-
     val x10: String => Option[{ ConsA(??? : Int, ConsA(??? : Char, NilA)) }] = compileRegex(Cons('(', Cons('[', Cons('1', Cons('-', Cons('3', Cons(']', Cons(')', Cons('(', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons(')', Nil)))))))))))))))
-
     val x11: String => Option[{ ConsA(??? : Int, ConsA(??? : String, NilA)) }] = compileRegex(Cons('(', Cons('[', Cons('1', Cons('-', Cons('3', Cons(']', Cons(')', Cons('(', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons('[', Cons('a', Cons('-', Cons('b', Cons(']', Cons(')', Nil))))))))))))))))))))
-
     val x12: String => Option[{ ConsA(??? : String, ConsA(??? : String, NilA)) }] = compileRegex(Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Cons('(', Cons('a', Cons('b', Cons(')', Nil))))))))))))
-
     val x13: String => Option[{ ConsA(??? : String, ConsA(??? : Char, ConsA(??? : Char, NilA))) }] = compileRegex(Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Cons('(', Cons('a', Cons(')', Cons('(', Cons('e', Cons(')', Nil))))))))))))))
-
     val x14: String => Option[{ ConsA(??? : Option[String], ConsA(??? : Char, NilA)) }] = compileRegex(Cons('(', Cons('a', Cons('b', Cons(')', Cons('?', Cons('(', Cons('c', Cons(')', Nil)))))))))
-
     val x15: String => Option[{ ConsA(??? : Option[Char], ConsA(??? : Char, NilA)) }] = compileRegex(Cons('(', Cons('a', Cons(')', Cons('?', Cons('(', Cons('c', Cons(')', Nil))))))))
-
     val x16: String => Option[{ ConsA(??? : Option[Int], ConsA(??? : Char, NilA)) }] = compileRegex(Cons('(', Cons('1', Cons(')', Cons('?', Cons('(', Cons('c', Cons(')', Nil))))))))
-
     val x17: String => Option[{ ConsA(??? : Option[Int], ConsA(??? : Option[Char], NilA)) }] = compileRegex(Cons('(', Cons('1', Cons(')', Cons('?', Cons('(', Cons('c', Cons(')', Cons('?', Nil)))))))))
-
     val x18: String => Option[{ ConsA(??? : Option[StarMatch[String]], ConsA(??? : Char, NilA)) }] = compileRegex(Cons('(', Cons('a', Cons('b', Cons(')', Cons('*', Cons('(', Cons('c', Cons(')', Nil)))))))))
-
     val x19: String => Option[{ ConsA(??? : Option[StarMatch[Char]], ConsA(??? : Char, NilA)) }] = compileRegex(Cons('(', Cons('a', Cons(')', Cons('*', Cons('(', Cons('c', Cons(')', Nil))))))))
-
     val x20: String => Option[{ ConsA(??? : Option[StarMatch[Int]], ConsA(??? : Char, NilA)) }] = compileRegex(Cons('(', Cons('1', Cons(')', Cons('*', Cons('(', Cons('c', Cons(')', Nil))))))))
-
     val x21: String => Option[{ ConsA(??? : Option[StarMatch[Int]], ConsA(??? : Option[StarMatch[Char]], NilA)) }] = compileRegex(Cons('(', Cons('1', Cons(')', Cons('*', Cons('(', Cons('c', Cons(')', Cons('*', Nil)))))))))
 }

@@ -3,19 +3,19 @@ object Lst {
 
     sealed trait Lst {
         /** Returns a new list resulting from the concatenation of this list with the given one.
-        *
-        *   @param that the list to concatenate.
-        *   @return a list containing the elements from the left hand operand followed by the elements from the right hand operand.
-        */
+         *
+         *  @param that the list to concatenate.
+         *  @return a list containing the elements from the left hand operand followed by the elements from the right hand operand.
+         */
         def ++(that: Lst): Lst = this match {
             case Nil => that
             case Cons(x, xs) => Cons(x, xs ++ that)
         }
 
         /** Converts this list to a scala.collection.immutable.List.
-        *
-        *   @return a scala.collection.immutable.List containing all elements of this list.
-        */
+         *
+         *  @return a scala.collection.immutable.List containing all elements of this list.
+         */
         def toList: List[Any] = this match {
             case Nil => scala.collection.immutable.Nil
             case Cons(x, xs) => x :: xs.toList
@@ -191,16 +191,15 @@ object Regex {
     type ReturnType[GroupsTypesRepr <: Lst] = String => Option[ToTypesList[GroupsTypesRepr]]
 
     /** Returns a compiled regular expression pattern for the given regex.
-    *
-    *   @param regex the regular expression to compile into a pattern.
-    *   @return a compiled regular expression pattern.
-    */
+     *
+     *  @param regex the regular expression to compile into a pattern.
+     *  @return a compiled regular expression pattern.
+     */
     def compileRegex[Input <: Lst](regex: Input): CompileRegex[Input] = {
         val regexL = regex.toList
         compile(regexL, Empty, 0, false, 0, Nil, regexL)
     }.asInstanceOf[CompileRegex[Input]]
 
-    // Compiles the given string by maintaining several accumulators
     private def compile[Input <: Lst, CurrType <: Type, Chars <: Nat, CharClass <: Boolean, Classes <: Nat, GroupsTypesRepr <: Lst, CachedRegex <: Lst](regex: List[Any], currType: CurrType, chars: Int, charClass: CharClass, classes: Int, groupsTypesRepr: GroupsTypesRepr, cachedRegex: => List[Any]): Compile[Input, CurrType, Chars, CharClass, Classes, GroupsTypesRepr, CachedRegex] = {
         if (charClass) compileCharClass(regex, currType, chars, charClass, classes, groupsTypesRepr, ' ', cachedRegex)
         else regex match {
@@ -248,7 +247,7 @@ object Regex {
         }
     }
 
-    // Converts the given sequence into a Lst
+    // Converts the given sequence to a Lst
     private def toLst(s: Seq[Any]): Lst =
         if (s.isEmpty) Nil
         else Cons(s.head, toLst(s.tail))
