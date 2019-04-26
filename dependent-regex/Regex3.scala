@@ -1,25 +1,36 @@
-object ListCharConcat {
+object Lst {
     import Regex.StarMatch
-    sealed trait List {
-        def ++(that: List): List = this match {
+
+    sealed trait Lst {
+        /** Returns a new list resulting from the concatenation of this list with the given one.
+        *
+        *   @param that the list to concatenate.
+        *   @return a list containing the elements from the left hand operand followed by the elements from the right hand operand.
+        */
+        def ++(that: Lst): Lst = this match {
             case Nil => that
             case Cons(x, xs) => Cons(x, xs ++ that)
         }
 
-        def toScalaList: scala.collection.immutable.List[Any] = this match {
+        /** Converts this list to a scala.collection.immutable.List.
+        *
+        *   @return a scala.collection.immutable.List containing all elements of this list.
+        */
+        def toList: List[Any] = this match {
             case Nil => scala.collection.immutable.Nil
-            case Cons(x, xs) => x :: xs.toScalaList
+            case Cons(x, xs) => x :: xs.toList
         }
     }
-    case object Nil extends List
-    case class Cons[T, Tail <: List](head: T, tail: Tail) extends List
 
-    type Concat[L1 <: List, L2 <: List] = L1 match {
+    case object Nil extends Lst
+    case class Cons[T, Tail <: Lst](head: T, tail: Lst) extends Lst
+
+    type Concat[L1 <: Lst, L2 <: Lst] = L1 match {
             case Nil.type => L2
             case Cons[x, xs] => Cons[x, Concat[xs, L2]]
     }
 
-    type ToTypesList[L <: List] = L match {
+    type ToTypesList[L <: Lst] = L match {
         case Nil.type => Nil.type
         case Cons[x, xs] => x match {
             case 'C' => Cons[Char, ToTypesList[xs]]
@@ -45,15 +56,15 @@ object Nat {
     class Pred[N <: Nat] extends Nat
 }
 
-object CheckParens {
-    import ListCharConcat._
+object CheckDelimiters {
+    import Lst._
     import Nat._
 
-    type CheckParens[Input <: List] = Check[Input, Zero, '(', ')']
+    type CheckParens[Input <: Lst] = Check[Input, Zero, '(', ')']
 
-    type CheckBrackets[Input <: List] = Check[Input, Zero, '[', ']']
+    type CheckBrackets[Input <: Lst] = Check[Input, Zero, '[', ']']
 
-    type Check[Input <: List, Opened <: Nat, Open <: Char, Close <: Char] = Input match {
+    type Check[Input <: Lst, Opened <: Nat, Open <: Char, Close <: Char] = Input match {
         case Nil.type => Opened match {
             case Zero => true
             case _ => false
@@ -84,8 +95,8 @@ object CheckParens {
 }
 
 object Regex {
-    import ListCharConcat._
-    import CheckParens._
+    import Lst._
+    import CheckDelimiters._
     import Nat._
 
     sealed trait Type
@@ -99,12 +110,12 @@ object Regex {
     case object RegexError
     case class StarMatch[T](m: T)
 
-    type CompileRegex[Input <: List] = CheckParens[Input] match {
+    type CompileRegex[Input <: Lst] = CheckParens[Input] match {
         case true => Compile[Input, Empty.type, Zero, false, Zero, Nil.type, Input]
         case false => RegexError.type
     }
 
-    type Compile[Input <: List, CurrType <: Type, Chars <: Nat, CharClass <: Boolean, Classes <: Nat, GroupsTypesRepr <: List, CachedRegex <: List] = CharClass match {
+    type Compile[Input <: Lst, CurrType <: Type, Chars <: Nat, CharClass <: Boolean, Classes <: Nat, GroupsTypesRepr <: Lst, CachedRegex <: Lst] = CharClass match {
         case false => Input match {
             case Nil.type => ReturnType[GroupsTypesRepr]
             case Cons['[', xs] => Compile[xs, CurrType, Chars, true, Suc[Classes], GroupsTypesRepr, CachedRegex]
@@ -129,7 +140,7 @@ object Regex {
         }
     }
 
-    type CompileCharClass[Input <: List, CurrType <: Type, Chars <: Nat, CharClass <: Boolean, Classes <: Nat, GroupsTypesRepr <: List, FirstElemInClass <: Char, CachedRegex] = Input match {
+    type CompileCharClass[Input <: Lst, CurrType <: Type, Chars <: Nat, CharClass <: Boolean, Classes <: Nat, GroupsTypesRepr <: Lst, FirstElemInClass <: Char, CachedRegex <: Lst] = Input match {
         case Cons['-', xs] => CompileCharClass[xs, CurrType, Chars, CharClass, Classes, GroupsTypesRepr, FirstElemInClass, CachedRegex]
         case Cons[']', xs] => Classes match {
             case Suc[Zero] => CurrType match {
@@ -148,13 +159,13 @@ object Regex {
         }
     }
 
-    type AddTypeToList[T <: Type, L <: List, Chars <: Nat] = T match {
+    type AddTypeToList[T <: Type, L <: Lst, Chars <: Nat] = T match {
         case Optional[t] => AddType[t, L, Chars, Cons['H', Nil.type], Cons['T', Nil.type], Cons['N', Nil.type]]
         case Star[t] => AddType[t, L, Chars, Cons['R', Nil.type], Cons['G', Nil.type], Cons['E', Nil.type]]
         case _ => AddType[T, L, Chars, Cons['C', Nil.type], Cons['S', Nil.type], Cons['I', Nil.type]]
     }
 
-    type AddType[T <: Type, L <: List, Chars <: Nat, ReprC <: List, ReprS <: List, ReprI <: List] = T match {
+    type AddType[T <: Type, L <: Lst, Chars <: Nat, ReprC <: Lst, ReprS <: Lst, ReprI <: Lst] = T match {
         case Chr.type => Concat[L, ReprC]
         case Str.type => Chars match {
                 case Suc[Zero] => Concat[L, ReprC]
@@ -177,17 +188,23 @@ object Regex {
         case _ => false
     }
 
-    type ReturnType[GroupsTypesRepr <: List] = String => Option[ToTypesList[GroupsTypesRepr]]
+    type ReturnType[GroupsTypesRepr <: Lst] = String => Option[ToTypesList[GroupsTypesRepr]]
 
-    def compileRegex[Input <: List](s: Input): CompileRegex[Input] = {
-        val regex = s.toScalaList
-        compile(regex, Empty, 0, false, 0, Nil, regex)
+    /** Returns a compiled regular expression pattern for the given regex.
+    *
+    *   @param regex the regular expression to compile into a pattern.
+    *   @return a compiled regular expression pattern.
+    */
+    def compileRegex[Input <: Lst](regex: Input): CompileRegex[Input] = {
+        val regexL = regex.toList
+        compile(regexL, Empty, 0, false, 0, Nil, regexL)
     }.asInstanceOf[CompileRegex[Input]]
 
-    private def compile[Input <: List, CurrType <: Type, Chars <: Nat, CharClass <: Boolean, Classes <: Nat, GroupsTypesRepr <: List, CachedRegex <: List](s: scala.collection.immutable.List[Any], currType: CurrType, chars: Int, charClass: CharClass, classes: Int, groupsTypesRepr: GroupsTypesRepr, cachedRegex: => scala.collection.immutable.List[Any]): Compile[Input, CurrType, Chars, CharClass, Classes, GroupsTypesRepr, CachedRegex] = {
-        if (charClass) compileCharClass(s, currType, chars, charClass, classes, groupsTypesRepr, ' ', cachedRegex)
-        else s match {
-            case scala.collection.immutable.Nil => returnType[GroupsTypesRepr](cachedRegex, groupsTypesRepr.toScalaList)
+    // Compiles the given string by maintaining several accumulators
+    private def compile[Input <: Lst, CurrType <: Type, Chars <: Nat, CharClass <: Boolean, Classes <: Nat, GroupsTypesRepr <: Lst, CachedRegex <: Lst](regex: List[Any], currType: CurrType, chars: Int, charClass: CharClass, classes: Int, groupsTypesRepr: GroupsTypesRepr, cachedRegex: => List[Any]): Compile[Input, CurrType, Chars, CharClass, Classes, GroupsTypesRepr, CachedRegex] = {
+        if (charClass) compileCharClass(regex, currType, chars, charClass, classes, groupsTypesRepr, ' ', cachedRegex)
+        else regex match {
+            case scala.collection.immutable.Nil => returnType[GroupsTypesRepr](cachedRegex, groupsTypesRepr.toList)
             case '[' :: xs => compile(xs, currType, chars, true, classes + 1, groupsTypesRepr, cachedRegex)
             case '(' :: xs => compile(xs, Empty, 0, false, 0, groupsTypesRepr, cachedRegex)
             case ')' :: xs => xs match {
@@ -201,8 +218,8 @@ object Regex {
         }
     }.asInstanceOf[Compile[Input, CurrType, Chars, CharClass, Classes, GroupsTypesRepr, CachedRegex]]
 
-    private def compileCharClass[Input <: List, CurrType <: Type, Chars <: Nat, CharClass <: Boolean, Classes <: Nat, GroupsTypesRepr <: List, FirstElemInClass <: Char, CachedRegex](s: scala.collection.immutable.List[Any], currType: CurrType, chars: Int, charClass: CharClass, classes: Int, groupsTypesRepr: GroupsTypesRepr, firstElemInClass: Char, cachedRegex: => scala.collection.immutable.List[Any]): CompileCharClass[Input, CurrType, Chars, CharClass, Classes, GroupsTypesRepr, FirstElemInClass, CachedRegex] = {
-        s match {
+    private def compileCharClass[Input <: Lst, CurrType <: Type, Chars <: Nat, CharClass <: Boolean, Classes <: Nat, GroupsTypesRepr <: Lst, FirstElemInClass <: Char, CachedRegex <: Lst](regex: List[Any], currType: CurrType, chars: Int, charClass: CharClass, classes: Int, groupsTypesRepr: GroupsTypesRepr, firstElemInClass: Char, cachedRegex: => List[Any]): CompileCharClass[Input, CurrType, Chars, CharClass, Classes, GroupsTypesRepr, FirstElemInClass, CachedRegex] = {
+        regex match {
             case '-' :: xs => compileCharClass(xs, currType, chars, charClass, classes, groupsTypesRepr, firstElemInClass, cachedRegex)
             case ']' :: xs =>
                 if (classes == 1 && currType.isInstanceOf[Str.type]) compile(xs, Chr, chars, false, classes, groupsTypesRepr, cachedRegex)
@@ -214,60 +231,64 @@ object Regex {
         }
     }.asInstanceOf[CompileCharClass[Input, CurrType, Chars, CharClass, Classes, GroupsTypesRepr, FirstElemInClass, CachedRegex]]
 
-    private def addTypeToList(t: Type, l: List, chars: Int): List = t match {
-        case Optional(tp) => addType(tp, l, chars, Cons('H', Nil), Cons('T', Nil), Cons('N', Nil))
-        case Star(tp) => addType(tp, l, chars, Cons('R', Nil), Cons('G', Nil), Cons('E', Nil))
-        case _ => addType(t, l, chars, Cons('C', Nil), Cons('S', Nil), Cons('I', Nil))
+    // Adds the given type to the given list by concatenating to it its char representation
+    private def addTypeToList(t: Type, l: Lst, chars: Int): Lst = {
+        def addType(t: Type, l: Lst, chars: Int, reprC: Lst, reprS: Lst, reprI: Lst) = t match {
+            case Chr => l ++ reprC
+            case Str =>
+                if (chars == 1) l ++ reprC
+                else l ++ reprS
+            case _ => l ++ reprI
+        }
+
+        t match {
+            case Optional(tp) => addType(tp, l, chars, Cons('H', Nil), Cons('T', Nil), Cons('N', Nil))
+            case Star(tp) => addType(tp, l, chars, Cons('R', Nil), Cons('G', Nil), Cons('E', Nil))
+            case _ => addType(t, l, chars, Cons('C', Nil), Cons('S', Nil), Cons('I', Nil))
+        }
     }
 
-    private def addType(t: Type, l: List, chars: Int, reprC: List, reprS: List, reprI: List) = t match {
-        case Chr => l ++ reprC
-        case Str =>
-            if (chars == 1) l ++ reprC
-            else l ++ reprS
-        case _ => l ++ reprI
-    }
-
-    private def toList(s: Seq[Any]): List = {
+    // Converts the given sequence into a Lst
+    private def toLst(s: Seq[Any]): Lst =
         if (s.isEmpty) Nil
-        else Cons(s.head, toList(s.tail))
-    }
+        else Cons(s.head, toLst(s.tail))
 
-    private def returnType[ReturnTypesRepr <: List](regex: scala.collection.immutable.List[Any], returnTypesRepr: scala.collection.immutable.List[Any]): ReturnType[ReturnTypesRepr] =
+    // Builds and returns the closure that can be used as a pattern to match a given string
+    private def returnType[ReturnTypesRepr <: Lst](regex: List[Any], returnTypesRepr: List[Any]): ReturnType[ReturnTypesRepr] =
         {
             input: String =>
                 val firstMatchOpt = regex.toString.r.findFirstMatchIn(input)
                 if (firstMatchOpt.isEmpty) None
                 else {
                     val firstMatch = firstMatchOpt.get
-                    Some(toList(returnTypesRepr.zipWithIndex.map {
-                            case (s) if s._1 == 'S' => firstMatch.group(s._2 + 1).toString
-                            case (s) if s._1 == 'I' => firstMatch.group(s._2 + 1).toInt
-                            case (s) if s._1 == 'C' => firstMatch.group(s._2 + 1)(0)
-                            case (s) if s._1 == 'T' =>
-                                val group = firstMatch.group(s._2 + 1)
+                    Some(toLst(returnTypesRepr.zipWithIndex.map {
+                            case ('S', i) => firstMatch.group(i + 1).toString // String
+                            case ('I', i) => firstMatch.group(i + 1).toInt // Int
+                            case ('C', i) => firstMatch.group(i + 1)(0) // Char
+                            case ('T', i) =>
+                                val group = firstMatch.group(i + 1)
                                 if (group == null) None
-                                else Some(group.toString)
-                            case (s) if s._1 == 'G' =>
-                                val group = firstMatch.group(s._2 + 1)
+                                else Some(group.toString) // Option[String]
+                            case ('G', i) =>
+                                val group = firstMatch.group(i + 1)
                                 if (group == null) None
-                                else Some(StarMatch[String](group.toString))
-                            case (s) if s._1 == 'N' =>
-                                val group = firstMatch.group(s._2 + 1)
+                                else Some(StarMatch[String](group.toString)) // StarMatch[String]
+                            case ('N', i) =>
+                                val group = firstMatch.group(i + 1)
                                 if (group == null) None
-                                else Some(group.toInt)
-                            case (s) if s._1 == 'E' =>
-                                val group = firstMatch.group(s._2 + 1)
+                                else Some(group.toInt) // Option[Int]
+                            case ('E', i) =>
+                                val group = firstMatch.group(i + 1)
                                 if (group == null) None
-                                else Some(StarMatch[Int](group.toInt))
-                            case (s) if s._1 == 'H' =>
-                                val group = firstMatch.group(s._2 + 1)
+                                else Some(StarMatch[Int](group.toInt)) // StarMatch[Int]
+                            case ('H', i) =>
+                                val group = firstMatch.group(i + 1)
                                 if (group == null) None
-                                else Some(group(0))
-                            case (s) if s._1 == 'R' =>
-                                val group = firstMatch.group(s._2 + 1)
+                                else Some(group(0)) // Option[Char]
+                            case ('R', i) =>
+                                val group = firstMatch.group(i + 1)
                                 if (group == null) None
-                                else Some(StarMatch[Char](group(0)))
+                                else Some(StarMatch[Char](group(0))) // StarMatch[Char]
                         }))
                     }
         }.asInstanceOf[ReturnType[ReturnTypesRepr]]
@@ -353,7 +374,7 @@ object Regex {
 }
 
 object RegexTests {
-    import ListCharConcat._
+    import Lst._
     import Regex._
 
     val x0: RegexError.type = compileRegex[Cons['(', Nil.type]](Cons('(', Nil))
