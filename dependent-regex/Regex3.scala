@@ -23,14 +23,14 @@ object Lst {
     }
 
     case object Nil extends Lst
-    case class Cons[T, Tail <: Lst](head: T, tail: Lst) extends Lst
+    case class Cons[T, Tail <: Lst](head: T, tail: Tail) extends Lst
 
-    type Concat[L1 <: Lst, L2 <: Lst] = L1 match {
+    type Concat[L1 <: Lst, L2 <: Lst] <: Lst = L1 match {
             case Nil.type => L2
             case Cons[x, xs] => Cons[x, Concat[xs, L2]]
     }
 
-    type ToTypesList[L <: Lst] = L match {
+    type ToTypesList[L <: Lst] <: Lst = L match {
         case Nil.type => Nil.type
         case Cons[x, xs] => x match {
             case 'C' => Cons[Char, ToTypesList[xs]]
@@ -140,7 +140,7 @@ object Regex {
         }
     }
 
-    type CompileCharClass[Input <: Lst, CurrType <: Type, Chars <: Nat, CharClass <: Boolean, Classes <: Nat, GroupsTypesRepr <: Lst, FirstElemInClass <: Char, CachedRegex <: Lst] = Input match {
+    type CompileCharClass[Input <: Lst, CurrType <: Type, Chars <: Nat, CharClass <: Boolean, Classes <: Nat, GroupsTypesRepr <: Lst, FirstElemInClass, CachedRegex <: Lst] = Input match {
         case Cons['-', xs] => CompileCharClass[xs, CurrType, Chars, CharClass, Classes, GroupsTypesRepr, FirstElemInClass, CachedRegex]
         case Cons[']', xs] => Classes match {
             case Suc[Zero] => CurrType match {
@@ -149,7 +149,7 @@ object Regex {
             }
             case _ => Compile[xs, CurrType, Chars, false, Classes, GroupsTypesRepr, CachedRegex]
         }
-        case Cons[x, xs] => IsDigit[x] match { // TODO RegexError if FirstElemInClass > x
+        case Cons[x, xs] => IsDigit[x] match {
             case true => CurrType match {
                 case Empty.type => CompileCharClass[xs, Integ.type, Chars, CharClass, Classes, GroupsTypesRepr, x, CachedRegex]
                 case Integ.type => CompileCharClass[xs, Integ.type, Chars, CharClass, Classes, GroupsTypesRepr, x, CachedRegex]
@@ -159,13 +159,13 @@ object Regex {
         }
     }
 
-    type AddTypeToList[T <: Type, L <: Lst, Chars <: Nat] = T match {
+    type AddTypeToList[T <: Type, L <: Lst, Chars <: Nat] <: Lst = T match {
         case Optional[t] => AddType[t, L, Chars, Cons['H', Nil.type], Cons['T', Nil.type], Cons['N', Nil.type]]
         case Star[t] => AddType[t, L, Chars, Cons['R', Nil.type], Cons['G', Nil.type], Cons['E', Nil.type]]
         case _ => AddType[T, L, Chars, Cons['C', Nil.type], Cons['S', Nil.type], Cons['I', Nil.type]]
     }
 
-    type AddType[T <: Type, L <: Lst, Chars <: Nat, ReprC <: Lst, ReprS <: Lst, ReprI <: Lst] = T match {
+    type AddType[T <: Type, L <: Lst, Chars <: Nat, ReprC <: Lst, ReprS <: Lst, ReprI <: Lst] <: Lst = T match {
         case Chr.type => Concat[L, ReprC]
         case Str.type => Chars match {
                 case Suc[Zero] => Concat[L, ReprC]
@@ -174,7 +174,7 @@ object Regex {
         case _ => Concat[L, ReprI]
     }
 
-    type IsDigit[C <: Char] = C match {
+    type IsDigit[C] <: Boolean = C match {
         case '0' => true
         case '1' => true
         case '2' => true
@@ -218,7 +218,7 @@ object Regex {
     }.asInstanceOf[Compile[Input, CurrType, Chars, CharClass, Classes, GroupsTypesRepr, CachedRegex]]
 
     private def compileCharClass[Input <: Lst, CurrType <: Type, Chars <: Nat, CharClass <: Boolean, Classes <: Nat, GroupsTypesRepr <: Lst, FirstElemInClass <: Char, CachedRegex <: Lst](regex: List[Any], currType: CurrType, chars: Int, charClass: CharClass, classes: Int, groupsTypesRepr: GroupsTypesRepr, firstElemInClass: Char, cachedRegex: => List[Any]): CompileCharClass[Input, CurrType, Chars, CharClass, Classes, GroupsTypesRepr, FirstElemInClass, CachedRegex] = {
-        regex match {
+        (regex: @unchecked) match {
             case '-' :: xs => compileCharClass(xs, currType, chars, charClass, classes, groupsTypesRepr, firstElemInClass, cachedRegex)
             case ']' :: xs =>
                 if (classes == 1 && currType.isInstanceOf[Str.type]) compile(xs, Chr, chars, false, classes, groupsTypesRepr, cachedRegex)
@@ -256,7 +256,7 @@ object Regex {
     private def returnType[ReturnTypesRepr <: Lst](regex: List[Any], returnTypesRepr: List[Any]): ReturnType[ReturnTypesRepr] =
         {
             input: String =>
-                val firstMatchOpt = regex.toString.r.findFirstMatchIn(input)
+                val firstMatchOpt = regex.mkString.r.findFirstMatchIn(input)
                 if (firstMatchOpt.isEmpty) None
                 else {
                     val firstMatch = firstMatchOpt.get
@@ -302,7 +302,7 @@ object Regex {
     val myPattern2: String => Option[Cons[Int, Nil.type]] = compileRegex[Cons['(', Cons['1', Cons['2', Cons['3', Cons[')', Nil.type]]]]]](Cons('(', Cons('1', Cons('2', Cons('3', Cons(')', Nil))))))
     val r2: Int = (myPattern2("123"): @unchecked) match {
         case None => -1
-        case Some(Cons(i: Int, Nil)) => i
+        case Some(Cons(i, Nil)) => i
     }
 
     val myPattern3: String => Option[Cons[Char, Nil.type]] = compileRegex[Cons['(', Cons['[', Cons['a', Cons['-', Cons['z', Cons[']', Cons[')', Nil.type]]]]]]]](Cons('(', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons(')', Nil))))))))
@@ -378,7 +378,7 @@ object RegexTests {
 
     val x0: RegexError.type = compileRegex[Cons['(', Nil.type]](Cons('(', Nil))
     val x1: String => Option[Cons[String, Nil.type]] = compileRegex[Cons['(', Cons['a', Cons['s', Cons['d', Cons['f', Cons['s', Cons[')', Nil.type]]]]]]]](Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Nil))))))))
-    val x2: String => Option[Cons[Char, Nil.type]] = compileRegex[Cons['(', Cons['a', Cons[')', Nil.type]]]](Cons('(', Cons('a', Cons(')', Nil))))
+    val x2: String => Option[Cons[Char, Nil.type]] = compileRegex[Cons['(', Cons['a', Cons[')', Nil.type]]]](Cons('(', Cons('a', Cons(')', Nil)))) 
     val x3: String => Option[Cons[Int, Nil.type]] = compileRegex[Cons['(', Cons['1', Cons['2', Cons['3', Cons[')', Nil.type]]]]]](Cons('(', Cons('1', Cons('2', Cons('3', Cons(')', Nil))))))
     val x4: String => Option[Cons[String, Nil.type]] = compileRegex[Cons['(', Cons['[', Cons['a', Cons['-', Cons['z', Cons[']', Cons['[', Cons['a', Cons['-', Cons['z', Cons[']', Cons[')', Nil.type]]]]]]]]]]]]](Cons('(', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons(')', Nil)))))))))))))
     val x5: String => Option[Cons[Int, Nil.type]] = compileRegex[Cons['(', Cons['[', Cons['0', Cons['-', Cons['9', Cons[']', Cons['[', Cons['0', Cons['-', Cons['9', Cons[']', Cons[')', Nil.type]]]]]]]]]]]]](Cons('(', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons(')', Nil)))))))))))))
