@@ -196,10 +196,9 @@ object Regex {
     }
 
     // Converts the given sequence to a LstA
-    private def toLstA(s: Seq[Any]): LstA = {
+    private def toLstA(s: Seq[Any]): LstA =
         if (s.isEmpty) NilA
         else ConsA(s.head, toLstA(s.tail))
-    }
 
     // Builds and returns the closure that can be used as a pattern to match a given string
     dependent private def returnType(regex: LstChar, returnTypesRepr: LstChar): String => Option[{ returnTypesRepr.toLstA }] =
