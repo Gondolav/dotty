@@ -1,5 +1,5 @@
 object Lst {
-    import Regex.StarMatch
+    import Regex._
 
     sealed trait Lst {
         /** Returns a new list resulting from the concatenation of this list with the given one.
@@ -33,16 +33,19 @@ object Lst {
     type ToTypesList[L <: Lst] <: Lst = L match {
         case Nil.type => Nil.type
         case Cons[x, xs] => x match {
-            case 'C' => Cons[Char, ToTypesList[xs]]
-            case 'S' => Cons[String, ToTypesList[xs]]
-            case 'I' => Cons[Int, ToTypesList[xs]]
-            case 'H' => Cons[Option[Char], ToTypesList[xs]]
-            case 'T' => Cons[Option[String], ToTypesList[xs]]
-            case 'N' => Cons[Option[Int], ToTypesList[xs]]
-            case 'R' => Cons[Option[StarMatch[Char]], ToTypesList[xs]]
-            case 'G' => Cons[Option[StarMatch[String]], ToTypesList[xs]]
-            case _ => Cons[Option[StarMatch[Int]], ToTypesList[xs]]
+            case Optional[t] =>
+                ToType[t, Cons[Option[Char], ToTypesList[xs]], Cons[Option[String], ToTypesList[xs]], Cons[Option[Int], ToTypesList[xs]]]
+            case Star[t] =>
+                ToType[t, Cons[Option[StarMatch[Char]], ToTypesList[xs]], Cons[Option[StarMatch[String]], ToTypesList[xs]], Cons[Option[StarMatch[Int]], ToTypesList[xs]]]
+            case _ =>
+                ToType[x, Cons[Char, ToTypesList[xs]], Cons[String, ToTypesList[xs]], Cons[Int, ToTypesList[xs]]]
         }
+    }
+
+    type ToType[T, C <: Lst, S <: Lst, I <: Lst] <: Lst = T match {
+        case Chr.type => C
+        case Str.type => S
+        case Integ.type => I
     }
 }
 
@@ -160,9 +163,9 @@ object Regex {
     }
 
     type AddTypeToList[T <: Type, L <: Lst, Chars <: Nat] <: Lst = T match {
-        case Optional[t] => AddType[t, L, Chars, Cons['H', Nil.type], Cons['T', Nil.type], Cons['N', Nil.type]]
-        case Star[t] => AddType[t, L, Chars, Cons['R', Nil.type], Cons['G', Nil.type], Cons['E', Nil.type]]
-        case _ => AddType[T, L, Chars, Cons['C', Nil.type], Cons['S', Nil.type], Cons['I', Nil.type]]
+        case Optional[t] => AddType[t, L, Chars, Cons[Optional[Chr.type], Nil.type], Cons[Optional[Str.type], Nil.type], Cons[Optional[Integ.type], Nil.type]]
+        case Star[t] => AddType[t, L, Chars, Cons[Star[Chr.type], Nil.type], Cons[Star[Str.type], Nil.type], Cons[Star[Integ.type], Nil.type]]
+        case _ => AddType[T, L, Chars, Cons[Chr.type, Nil.type], Cons[Str.type, Nil.type], Cons[Integ.type, Nil.type]]
     }
 
     type AddType[T <: Type, L <: Lst, Chars <: Nat, ReprC <: Lst, ReprS <: Lst, ReprI <: Lst] <: Lst = T match {
@@ -230,7 +233,7 @@ object Regex {
         }
     }.asInstanceOf[CompileCharClass[Input, CurrType, Chars, CharClass, Classes, GroupsTypesRepr, FirstElemInClass, CachedRegex]]
 
-    // Adds the given type to the given list by concatenating to it its char representation
+    // Adds the given type to the given list by concatenating to it its representation
     private def addTypeToList(t: Type, l: Lst, chars: Int): Lst = {
         def addType(t: Type, l: Lst, chars: Int, reprC: Lst, reprS: Lst, reprI: Lst) = t match {
             case Chr => l ++ reprC
@@ -241,9 +244,9 @@ object Regex {
         }
 
         t match {
-            case Optional(tp) => addType(tp, l, chars, Cons('H', Nil), Cons('T', Nil), Cons('N', Nil))
-            case Star(tp) => addType(tp, l, chars, Cons('R', Nil), Cons('G', Nil), Cons('E', Nil))
-            case _ => addType(t, l, chars, Cons('C', Nil), Cons('S', Nil), Cons('I', Nil))
+            case Optional(tp) => addType(tp, l, chars, Cons(Optional(Chr), Nil), Cons(Optional(Str), Nil), Cons(Optional(Integ), Nil))
+            case Star(tp) => addType(tp, l, chars, Cons(Star(Chr), Nil), Cons(Star(Str), Nil), Cons(Star(Integ), Nil))
+            case _ => addType(t, l, chars, Cons(Chr, Nil), Cons(Str, Nil), Cons(Integ, Nil))
         }
     }
 
@@ -261,30 +264,30 @@ object Regex {
                 else {
                     val firstMatch = firstMatchOpt.get
                     Some(toLst(returnTypesRepr.zipWithIndex.map {
-                            case ('S', i) => firstMatch.group(i + 1).toString // String
-                            case ('I', i) => firstMatch.group(i + 1).toInt // Int
-                            case ('C', i) => firstMatch.group(i + 1)(0) // Char
-                            case ('T', i) =>
+                            case (Str, i) => firstMatch.group(i + 1).toString // String
+                            case (Integ, i) => firstMatch.group(i + 1).toInt // Int
+                            case (Chr, i) => firstMatch.group(i + 1)(0) // Char
+                            case (Optional(Str), i) =>
                                 val group = firstMatch.group(i + 1)
                                 if (group == null) None
                                 else Some(group.toString) // Option[String]
-                            case ('G', i) =>
+                            case (Star(Str), i) =>
                                 val group = firstMatch.group(i + 1)
                                 if (group == null) None
                                 else Some(StarMatch[String](group.toString)) // StarMatch[String]
-                            case ('N', i) =>
+                            case (Optional(Integ), i) =>
                                 val group = firstMatch.group(i + 1)
                                 if (group == null) None
                                 else Some(group.toInt) // Option[Int]
-                            case ('E', i) =>
+                            case (Star(Integ), i) =>
                                 val group = firstMatch.group(i + 1)
                                 if (group == null) None
                                 else Some(StarMatch[Int](group.toInt)) // StarMatch[Int]
-                            case ('H', i) =>
+                            case (Optional(Chr), i) =>
                                 val group = firstMatch.group(i + 1)
                                 if (group == null) None
                                 else Some(group(0)) // Option[Char]
-                            case ('R', i) =>
+                            case (Star(Chr), i) =>
                                 val group = firstMatch.group(i + 1)
                                 if (group == null) None
                                 else Some(StarMatch[Char](group(0))) // StarMatch[Char]
@@ -378,7 +381,7 @@ object RegexTests {
 
     val x0: RegexError.type = compileRegex[Cons['(', Nil.type]](Cons('(', Nil))
     val x1: String => Option[Cons[String, Nil.type]] = compileRegex[Cons['(', Cons['a', Cons['s', Cons['d', Cons['f', Cons['s', Cons[')', Nil.type]]]]]]]](Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Nil))))))))
-    val x2: String => Option[Cons[Char, Nil.type]] = compileRegex[Cons['(', Cons['a', Cons[')', Nil.type]]]](Cons('(', Cons('a', Cons(')', Nil)))) 
+    val x2: String => Option[Cons[Char, Nil.type]] = compileRegex[Cons['(', Cons['a', Cons[')', Nil.type]]]](Cons('(', Cons('a', Cons(')', Nil))))
     val x3: String => Option[Cons[Int, Nil.type]] = compileRegex[Cons['(', Cons['1', Cons['2', Cons['3', Cons[')', Nil.type]]]]]](Cons('(', Cons('1', Cons('2', Cons('3', Cons(')', Nil))))))
     val x4: String => Option[Cons[String, Nil.type]] = compileRegex[Cons['(', Cons['[', Cons['a', Cons['-', Cons['z', Cons[']', Cons['[', Cons['a', Cons['-', Cons['z', Cons[']', Cons[')', Nil.type]]]]]]]]]]]]](Cons('(', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons(')', Nil)))))))))))))
     val x5: String => Option[Cons[Int, Nil.type]] = compileRegex[Cons['(', Cons['[', Cons['0', Cons['-', Cons['9', Cons[']', Cons['[', Cons['0', Cons['-', Cons['9', Cons[']', Cons[')', Nil.type]]]]]]]]]]]]](Cons('(', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons(')', Nil)))))))))))))
@@ -390,7 +393,8 @@ object RegexTests {
     val x11: String => Option[Cons[Int, Cons[String, Nil.type]]] = compileRegex[Cons['(', Cons['[', Cons['1', Cons['-', Cons['3', Cons[']', Cons[')', Cons['(', Cons['[', Cons['a', Cons['-', Cons['z', Cons[']', Cons['[', Cons['a', Cons['-', Cons['b', Cons[']', Cons[')', Nil.type]]]]]]]]]]]]]]]]]]]](Cons('(', Cons('[', Cons('1', Cons('-', Cons('3', Cons(']', Cons(')', Cons('(', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons('[', Cons('a', Cons('-', Cons('b', Cons(']', Cons(')', Nil))))))))))))))))))))
     val x12: String => Option[Cons[String, Cons[String, Nil.type]]] = compileRegex[Cons['(', Cons['a', Cons['s', Cons['d', Cons['f', Cons['s', Cons[')', Cons['(', Cons['a', Cons['b', Cons[')', Nil.type]]]]]]]]]]]](Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Cons('(', Cons('a', Cons('b', Cons(')', Nil))))))))))))
     val x13: String => Option[Cons[String, Cons[Char, Cons[Char, Nil.type]]]] = compileRegex[Cons['(', Cons['a', Cons['s', Cons['d', Cons['f', Cons['s', Cons[')', Cons['(', Cons['a', Cons[')', Cons['(', Cons['e', Cons[')', Nil.type]]]]]]]]]]]]]](Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Cons('(', Cons('a', Cons(')', Cons('(', Cons('e', Cons(')', Nil))))))))))))))
-    val x14: String => Option[Cons[Option[String], Cons[Char, Nil.type]]] = compileRegex[Cons['(', Cons['a', Cons['b', Cons[')', Cons['?', Cons['(', Cons['c', Cons[')', Nil.type]]]]]]]]](Cons('(', Cons('a', Cons('b', Cons(')', Cons('?', Cons('(', Cons('c', Cons(')', Nil)))))))))
+    val x14 = compileRegex[Cons['(', Cons['a', Cons['b', Cons[')', Cons['?', Cons['(', Cons['c', Cons[')', Nil.type]]]]]]]]](Cons('(', Cons('a', Cons('b', Cons(')', Cons('?', Cons('(', Cons('c', Cons(')', Nil)))))))))
+    val xx: String => Option[Cons[Option[String], Cons[Char, Nil.type]]] = x14
     val x15: String => Option[Cons[Option[Char], Cons[Char, Nil.type]]] = compileRegex[Cons['(', Cons['a', Cons[')', Cons['?', Cons['(', Cons['c', Cons[')', Nil.type]]]]]]]](Cons('(', Cons('a', Cons(')', Cons('?', Cons('(', Cons('c', Cons(')', Nil))))))))
     val x16: String => Option[Cons[Option[Int], Cons[Char, Nil.type]]] = compileRegex[Cons['(', Cons['1', Cons[')', Cons['?', Cons['(', Cons['c', Cons[')', Nil.type]]]]]]]](Cons('(', Cons('1', Cons(')', Cons('?', Cons('(', Cons('c', Cons(')', Nil))))))))
     val x17: String => Option[Cons[Option[Int], Cons[Option[Char], Nil.type]]] = compileRegex[Cons['(', Cons['1', Cons[')', Cons['?', Cons['(', Cons['c', Cons[')', Cons['?', Nil.type]]]]]]]]](Cons('(', Cons('1', Cons(')', Cons('?', Cons('(', Cons('c', Cons(')', Cons('?', Nil)))))))))
