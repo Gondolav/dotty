@@ -1,6 +1,7 @@
 object Lst {
     import Regex._
 
+    // A trait representing a generic list.
     sealed trait Lst {
         /** Returns a new list resulting from the concatenation of this list with the given one.
          *
@@ -49,6 +50,7 @@ object Lst {
     }
 }
 
+// Natural numbers are needed for type-level computations.
 object Nat {
     sealed trait Nat
 

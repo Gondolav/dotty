@@ -1,4 +1,6 @@
 object Lst {
+    
+    // Dependently-typed list representing a list of Char.
     sealed trait LstChar {
         /** Returns a new list resulting from the concatenation of this list with the given one.
          *
@@ -83,7 +85,7 @@ object Lst {
     dependent case object Nil extends LstChar
     dependent case class Cons(head: Char, tail: LstChar) extends LstChar
 
-
+    // Dependently-typed list representing a list of Any.
     sealed trait LstA
     dependent case object NilA extends LstA
     dependent case class ConsA(head: Any, tail: LstA) extends LstA
