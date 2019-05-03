@@ -1,5 +1,5 @@
 object Lst {
-    
+
     // Dependently-typed list representing a list of Char.
     sealed trait LstChar {
         /** Returns a new list resulting from the concatenation of this list with the given one.
@@ -149,36 +149,36 @@ object Regex {
      *  @param regex the regular expression to compile into a pattern.
      *  @return a compiled regular expression pattern.
      */
-    dependent def compileRegex(s: LstChar): Any = {
-        if (checkParens(s)) compile(s, Empty, 0, false, 0, Nil, s)
+    dependent def compileRegex(regex: LstChar): Any = {
+        if (checkParens(regex)) compile(regex, Empty, 0, false, 0, Nil, regex)
         else RegexError
     }
 
-    dependent private def compile(s: LstChar, currType: Type, chars: Int, charClass: Boolean, classes: Int, groupsTypesRepr: LstChar, cachedRegex: => LstChar): Any = {
-        if (s.isInstanceOf[Nil.type]) returnType(cachedRegex, groupsTypesRepr)
+    dependent private def compile(regex: LstChar, currType: Type, chars: Int, charClass: Boolean, classes: Int, groupsTypesRepr: LstChar, cachedRegex: => LstChar): Any = {
+        if (regex.isInstanceOf[Nil.type]) returnType(cachedRegex, groupsTypesRepr)
         else if (charClass) {
-            if (checkBrackets(cachedRegex)) compileCharClass(s, currType, chars, charClass, classes, groupsTypesRepr, cachedRegex, ' ')
+            if (checkBrackets(cachedRegex)) compileCharClass(regex, currType, chars, charClass, classes, groupsTypesRepr, cachedRegex, ' ')
             else RegexError
         } else {
-            if (s.asInstanceOf[Cons].head == '[') compile(s.asInstanceOf[Cons].tail, currType, chars, true, classes + 1, groupsTypesRepr, cachedRegex)
-            else if (s.asInstanceOf[Cons].head == '(') compile(s.asInstanceOf[Cons].tail, Empty, 0, false, 0, groupsTypesRepr, cachedRegex)
-            else if (s.asInstanceOf[Cons].head == ')') compile(s.asInstanceOf[Cons].tail, currType, chars, charClass, classes, addTypeToList(currType, groupsTypesRepr, chars), cachedRegex)
-            else if (s.asInstanceOf[Cons].head == '?') compile(s.asInstanceOf[Cons].tail, currType, chars, charClass, classes, addTypeToList(Optional(currType), groupsTypesRepr.asInstanceOf[Cons].init, chars), cachedRegex)
-            else if (s.asInstanceOf[Cons].head == '*') compile(s.asInstanceOf[Cons].tail, currType, chars, charClass, classes, addTypeToList(Star(currType), groupsTypesRepr.asInstanceOf[Cons].init, chars), cachedRegex)
-            else if (isDigit(s.asInstanceOf[Cons].head) && (currType.isInstanceOf[Empty.type] || currType.isInstanceOf[Integ.type])) compile(s.asInstanceOf[Cons].tail, Integ, chars, charClass, classes, groupsTypesRepr, cachedRegex)
-            else compile(s.asInstanceOf[Cons].tail, Str, chars + 1, charClass, classes, groupsTypesRepr, cachedRegex)
+            if (regex.asInstanceOf[Cons].head == '[') compile(regex.asInstanceOf[Cons].tail, currType, chars, true, classes + 1, groupsTypesRepr, cachedRegex)
+            else if (regex.asInstanceOf[Cons].head == '(') compile(regex.asInstanceOf[Cons].tail, Empty, 0, false, 0, groupsTypesRepr, cachedRegex)
+            else if (regex.asInstanceOf[Cons].head == ')') compile(regex.asInstanceOf[Cons].tail, currType, chars, charClass, classes, addTypeToList(currType, groupsTypesRepr, chars), cachedRegex)
+            else if (regex.asInstanceOf[Cons].head == '?') compile(regex.asInstanceOf[Cons].tail, currType, chars, charClass, classes, addTypeToList(Optional(currType), groupsTypesRepr.asInstanceOf[Cons].init, chars), cachedRegex)
+            else if (regex.asInstanceOf[Cons].head == '*') compile(regex.asInstanceOf[Cons].tail, currType, chars, charClass, classes, addTypeToList(Star(currType), groupsTypesRepr.asInstanceOf[Cons].init, chars), cachedRegex)
+            else if (isDigit(regex.asInstanceOf[Cons].head) && (currType.isInstanceOf[Empty.type] || currType.isInstanceOf[Integ.type])) compile(regex.asInstanceOf[Cons].tail, Integ, chars, charClass, classes, groupsTypesRepr, cachedRegex)
+            else compile(regex.asInstanceOf[Cons].tail, Str, chars + 1, charClass, classes, groupsTypesRepr, cachedRegex)
         }
     }
 
-    dependent private def compileCharClass(s: LstChar, currType: Type, chars: Int, charClass: Boolean, classes: Int, groupsTypesRepr: LstChar, cachedRegex: => LstChar, firstElemInClass: Char): Any = {
-        if (s.asInstanceOf[Cons].head == '-') compileCharClass(s.asInstanceOf[Cons].tail, currType, chars, charClass, classes, groupsTypesRepr, cachedRegex, firstElemInClass)
-        else if (s.asInstanceOf[Cons].head == ']') {
-            if (classes == 1 && currType.isInstanceOf[Str.type]) compile(s.asInstanceOf[Cons].tail, Chr, chars, false, classes, groupsTypesRepr, cachedRegex)
-            else compile(s.asInstanceOf[Cons].tail, currType, chars, false, classes, groupsTypesRepr, cachedRegex)
+    dependent private def compileCharClass(regex: LstChar, currType: Type, chars: Int, charClass: Boolean, classes: Int, groupsTypesRepr: LstChar, cachedRegex: => LstChar, firstElemInClass: Char): Any = {
+        if (regex.asInstanceOf[Cons].head == '-') compileCharClass(regex.asInstanceOf[Cons].tail, currType, chars, charClass, classes, groupsTypesRepr, cachedRegex, firstElemInClass)
+        else if (regex.asInstanceOf[Cons].head == ']') {
+            if (classes == 1 && currType.isInstanceOf[Str.type]) compile(regex.asInstanceOf[Cons].tail, Chr, chars, false, classes, groupsTypesRepr, cachedRegex)
+            else compile(regex.asInstanceOf[Cons].tail, currType, chars, false, classes, groupsTypesRepr, cachedRegex)
         }
-        else if (firstElemInClass > s.asInstanceOf[Cons].head) RegexError
-        else if (isDigit(s.asInstanceOf[Cons].head) && (currType.isInstanceOf[Empty.type] || currType.isInstanceOf[Integ.type])) compileCharClass(s.asInstanceOf[Cons].tail, Integ, chars, charClass, classes, groupsTypesRepr, cachedRegex, s.asInstanceOf[Cons].head)
-        else compileCharClass(s.asInstanceOf[Cons].tail, Str, chars, charClass, classes, groupsTypesRepr, cachedRegex, s.asInstanceOf[Cons].head)
+        else if (firstElemInClass > regex.asInstanceOf[Cons].head) RegexError
+        else if (isDigit(regex.asInstanceOf[Cons].head) && (currType.isInstanceOf[Empty.type] || currType.isInstanceOf[Integ.type])) compileCharClass(regex.asInstanceOf[Cons].tail, Integ, chars, charClass, classes, groupsTypesRepr, cachedRegex, regex.asInstanceOf[Cons].head)
+        else compileCharClass(regex.asInstanceOf[Cons].tail, Str, chars, charClass, classes, groupsTypesRepr, cachedRegex, regex.asInstanceOf[Cons].head)
     }
 
     dependent private def isDigit(c: Char): Boolean = '0' <= c && c <= '9'
