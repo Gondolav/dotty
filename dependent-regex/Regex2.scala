@@ -142,6 +142,8 @@ object Regex {
 
     /** Returns a compiled regular expression pattern for the given regex.
      *
+     *  The regex received as input should have each group enclosed in parentheses.
+     *
      *  @param regex the regular expression to compile into a pattern.
      *  @return a compiled regular expression pattern.
      */
