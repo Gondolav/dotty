@@ -122,7 +122,7 @@ object Regex {
 
     type Compile[Input <: Lst, CurrType <: Type, Chars <: Nat, CharClass <: Boolean, Classes <: Nat, GroupsTypesRepr <: Lst, CachedRegex <: Lst] = CharClass match {
         case false => Input match {
-            case Nil.type => ReturnType[GroupsTypesRepr]
+            case Nil.type => BuildPattern[GroupsTypesRepr]
             case Cons['[', xs] => Compile[xs, CurrType, Chars, true, Suc[Classes], GroupsTypesRepr, CachedRegex]
             case Cons['(', xs] => Compile[xs, Empty.type, Zero, false, Zero, GroupsTypesRepr, CachedRegex]
             case Cons[')', xs] => xs match {
@@ -141,12 +141,12 @@ object Regex {
         }
         case true => CheckBrackets[CachedRegex] match {
             case false => RegexError.type
-            case true => CompileCharClass[Input, CurrType, Chars, CharClass, Classes, GroupsTypesRepr, ' ', CachedRegex]
+            case true => CompileCharClass[Input, CurrType, Chars, CharClass, Classes, GroupsTypesRepr, CachedRegex]
         }
     }
 
-    type CompileCharClass[Input <: Lst, CurrType <: Type, Chars <: Nat, CharClass <: Boolean, Classes <: Nat, GroupsTypesRepr <: Lst, FirstElemInClass, CachedRegex <: Lst] = Input match {
-        case Cons['-', xs] => CompileCharClass[xs, CurrType, Chars, CharClass, Classes, GroupsTypesRepr, FirstElemInClass, CachedRegex]
+    type CompileCharClass[Input <: Lst, CurrType <: Type, Chars <: Nat, CharClass <: Boolean, Classes <: Nat, GroupsTypesRepr <: Lst, CachedRegex <: Lst] = Input match {
+        case Cons['-', xs] => CompileCharClass[xs, CurrType, Chars, CharClass, Classes, GroupsTypesRepr, CachedRegex]
         case Cons[']', xs] => Classes match {
             case Suc[Zero] => CurrType match {
                 case Str.type => Compile[xs, Chr.type, Chars, false, Classes, GroupsTypesRepr, CachedRegex]
@@ -156,11 +156,11 @@ object Regex {
         }
         case Cons[x, xs] => IsDigit[x] match {
             case true => CurrType match {
-                case Empty.type => CompileCharClass[xs, Integ.type, Chars, CharClass, Classes, GroupsTypesRepr, x, CachedRegex]
-                case Integ.type => CompileCharClass[xs, Integ.type, Chars, CharClass, Classes, GroupsTypesRepr, x, CachedRegex]
-                case _ => CompileCharClass[xs, Str.type, Chars, CharClass, Classes, GroupsTypesRepr, x, CachedRegex]
+                case Empty.type => CompileCharClass[xs, Integ.type, Chars, CharClass, Classes, GroupsTypesRepr, CachedRegex]
+                case Integ.type => CompileCharClass[xs, Integ.type, Chars, CharClass, Classes, GroupsTypesRepr, CachedRegex]
+                case _ => CompileCharClass[xs, Str.type, Chars, CharClass, Classes, GroupsTypesRepr, CachedRegex]
             }
-            case false => CompileCharClass[xs, Str.type, Chars, CharClass, Classes, GroupsTypesRepr, x, CachedRegex]
+            case false => CompileCharClass[xs, Str.type, Chars, CharClass, Classes, GroupsTypesRepr, CachedRegex]
         }
     }
 
@@ -193,7 +193,7 @@ object Regex {
         case _ => false
     }
 
-    type ReturnType[GroupsTypesRepr <: Lst] = String => Option[ToTypesList[GroupsTypesRepr]]
+    type BuildPattern[GroupsTypesRepr <: Lst] = String => Option[ToTypesList[GroupsTypesRepr]]
 
     /** Returns a compiled regular expression pattern for the given regex.
      *
@@ -210,7 +210,7 @@ object Regex {
     private def compile[Input <: Lst, CurrType <: Type, Chars <: Nat, CharClass <: Boolean, Classes <: Nat, GroupsTypesRepr <: Lst, CachedRegex <: Lst](regex: List[Any], currType: CurrType, chars: Int, charClass: CharClass, classes: Int, groupsTypesRepr: GroupsTypesRepr, cachedRegex: => List[Any]): Compile[Input, CurrType, Chars, CharClass, Classes, GroupsTypesRepr, CachedRegex] = {
         if (charClass) compileCharClass(regex, currType, chars, charClass, classes, groupsTypesRepr, ' ', cachedRegex)
         else regex match {
-            case scala.collection.immutable.Nil => returnType[GroupsTypesRepr](cachedRegex, groupsTypesRepr.toList)
+            case scala.collection.immutable.Nil => buildPattern[GroupsTypesRepr](cachedRegex, groupsTypesRepr.toList)
             case '[' :: xs => compile(xs, currType, chars, true, classes + 1, groupsTypesRepr, cachedRegex)
             case '(' :: xs => compile(xs, Empty, 0, false, 0, groupsTypesRepr, cachedRegex)
             case ')' :: xs => xs match {
@@ -224,7 +224,7 @@ object Regex {
         }
     }.asInstanceOf[Compile[Input, CurrType, Chars, CharClass, Classes, GroupsTypesRepr, CachedRegex]]
 
-    private def compileCharClass[Input <: Lst, CurrType <: Type, Chars <: Nat, CharClass <: Boolean, Classes <: Nat, GroupsTypesRepr <: Lst, FirstElemInClass <: Char, CachedRegex <: Lst](regex: List[Any], currType: CurrType, chars: Int, charClass: CharClass, classes: Int, groupsTypesRepr: GroupsTypesRepr, firstElemInClass: Char, cachedRegex: => List[Any]): CompileCharClass[Input, CurrType, Chars, CharClass, Classes, GroupsTypesRepr, FirstElemInClass, CachedRegex] = {
+    private def compileCharClass[Input <: Lst, CurrType <: Type, Chars <: Nat, CharClass <: Boolean, Classes <: Nat, GroupsTypesRepr <: Lst, CachedRegex <: Lst](regex: List[Any], currType: CurrType, chars: Int, charClass: CharClass, classes: Int, groupsTypesRepr: GroupsTypesRepr, firstElemInClass: Char, cachedRegex: => List[Any]): CompileCharClass[Input, CurrType, Chars, CharClass, Classes, GroupsTypesRepr, CachedRegex] = {
         (regex: @unchecked) match {
             case '-' :: xs => compileCharClass(xs, currType, chars, charClass, classes, groupsTypesRepr, firstElemInClass, cachedRegex)
             case ']' :: xs =>
@@ -235,7 +235,7 @@ object Regex {
                 else if (x.asInstanceOf[Char].isDigit && (currType.isInstanceOf[Empty.type] || currType.isInstanceOf[Integ.type])) compileCharClass(xs, Integ, chars, charClass, classes, groupsTypesRepr, x.asInstanceOf[Char], cachedRegex)
                 else compileCharClass(xs, Str, chars, charClass, classes, groupsTypesRepr, x.asInstanceOf[Char], cachedRegex)
         }
-    }.asInstanceOf[CompileCharClass[Input, CurrType, Chars, CharClass, Classes, GroupsTypesRepr, FirstElemInClass, CachedRegex]]
+    }.asInstanceOf[CompileCharClass[Input, CurrType, Chars, CharClass, Classes, GroupsTypesRepr, CachedRegex]]
 
     // Adds the given type to the given list by concatenating to it its representation
     private def addTypeToList(t: Type, l: Lst, chars: Int): Lst = {
@@ -260,14 +260,14 @@ object Regex {
         else Cons(s.head, toLst(s.tail))
 
     // Builds and returns the closure that can be used as a pattern to match a given string
-    private def returnType[ReturnTypesRepr <: Lst](regex: List[Any], returnTypesRepr: List[Any]): ReturnType[ReturnTypesRepr] =
+    private def buildPattern[GroupsTypesRepr <: Lst](regex: List[Any], groupsTypesRepr: List[Any]): BuildPattern[GroupsTypesRepr] =
         {
             input: String =>
                 val firstMatchOpt = regex.mkString.r.findFirstMatchIn(input)
                 if (firstMatchOpt.isEmpty) None
                 else {
                     val firstMatch = firstMatchOpt.get
-                    Some(toLst(returnTypesRepr.zipWithIndex.map {
+                    Some(toLst(groupsTypesRepr.zipWithIndex.map {
                             case (Str, i) => firstMatch.group(i + 1).toString // String
                             case (Integ, i) => firstMatch.group(i + 1).toInt // Int
                             case (Chr, i) => firstMatch.group(i + 1)(0) // Char
@@ -297,7 +297,7 @@ object Regex {
                                 else Some(StarMatch[Char](group(0))) // StarMatch[Char]
                         }))
                     }
-        }.asInstanceOf[ReturnType[ReturnTypesRepr]]
+        }.asInstanceOf[BuildPattern[GroupsTypesRepr]]
 
 
     val myPattern1: String => Option[Cons[String, Cons[Char, Nil.type]]] = compileRegex[Cons['(', Cons['a', Cons['s', Cons['d', Cons['f', Cons['s', Cons[')', Cons['(', Cons['a', Cons[')', Nil.type]]]]]]]]]]](Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Cons('(', Cons('a', Cons(')', Nil)))))))))))

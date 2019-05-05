@@ -155,7 +155,7 @@ object Regex {
     }
 
     dependent private def compile(regex: LstChar, currType: Type, chars: Int, charClass: Boolean, classes: Int, groupsTypesRepr: LstChar, cachedRegex: => LstChar): Any = {
-        if (regex.isInstanceOf[Nil.type]) returnType(cachedRegex, groupsTypesRepr)
+        if (regex.isInstanceOf[Nil.type]) buildPattern(cachedRegex, groupsTypesRepr)
         else if (charClass) {
             if (checkBrackets(cachedRegex)) compileCharClass(regex, currType, chars, charClass, classes, groupsTypesRepr, cachedRegex, ' ')
             else RegexError
@@ -205,14 +205,14 @@ object Regex {
         else ConsA(s.head, toLstA(s.tail))
 
     // Builds and returns the closure that can be used as a pattern to match a given string
-    dependent private def returnType(regex: LstChar, returnTypesRepr: LstChar): String => Option[{ returnTypesRepr.toLstA }] =
+    dependent private def buildPattern(regex: LstChar, groupsTypesRepr: LstChar): String => Option[{ groupsTypesRepr.toLstA }] =
         {
             input: String =>
                 val firstMatchOpt = regex.toString.r.findFirstMatchIn(input)
                 if (firstMatchOpt.isEmpty) None
                 else {
                     val firstMatch = firstMatchOpt.get
-                    Some(toLstA(returnTypesRepr.toList.zipWithIndex.map {
+                    Some(toLstA(groupsTypesRepr.toList.zipWithIndex.map {
                             case (s) if s._1 == 'S' => firstMatch.group(s._2 + 1).toString // String
                             case (s) if s._1 == 'I' => firstMatch.group(s._2 + 1).toInt // Int
                             case (s) if s._1 == 'C' => firstMatch.group(s._2 + 1)(0) // Char
@@ -242,7 +242,7 @@ object Regex {
                                 else Some(StarMatch[Char](group(0))) // StarMatch[Char]
                         }))
                     }
-        }.asInstanceOf[String => Option[{ returnTypesRepr.toLstA }]]
+        }.asInstanceOf[String => Option[{ groupsTypesRepr.toLstA }]]
 
     val myPattern1: String => Option[{ ConsA(??? : String, ConsA(??? : Char, NilA)) }] = compileRegex(Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Cons('(', Cons('a', Cons(')', Nil)))))))))))
     val r1: String = (myPattern1("asdfsa"): @unchecked) match {
