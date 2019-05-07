@@ -324,8 +324,12 @@ object Regex {
 }
 
 object RegexTests {
-    import Regex._
     import Lst._
+    import Regex._
+
+    val y1: RegexError.type = compileRegex(Cons('(', Nil))
+    val y2: RegexError.type = compileRegex(Cons('(', Cons('[', Cons(')', Nil))))
+    val y3: RegexError.type = compileRegex(Cons('(', Cons('[', Cons('z', Cons('-', Cons('a', Cons(']', Cons(')', Nil))))))))
 
     val x1: String => Option[{ ConsA(??? : String, NilA) }] = compileRegex(Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Nil))))))))
     val x2: String => Option[{ ConsA(??? : Char, NilA) }] = compileRegex(Cons('(', Cons('a', Cons(')', Nil))))

@@ -383,7 +383,9 @@ object RegexTests {
     import Lst._
     import Regex._
 
-    val x0: RegexError.type = compileRegex[Cons['(', Nil.type]](Cons('(', Nil))
+    val y1: RegexError.type = compileRegex[Cons['(', Nil.type]](Cons('(', Nil))
+    val y2: RegexError.type = compileRegex[Cons['(', Cons['[', Cons[')', Nil.type]]]](Cons('(', Cons('[', Cons(')', Nil))))
+
     val x1: String => Option[Cons[String, Nil.type]] = compileRegex[Cons['(', Cons['a', Cons['s', Cons['d', Cons['f', Cons['s', Cons[')', Nil.type]]]]]]]](Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Nil))))))))
     val x2: String => Option[Cons[Char, Nil.type]] = compileRegex[Cons['(', Cons['a', Cons[')', Nil.type]]]](Cons('(', Cons('a', Cons(')', Nil))))
     val x3: String => Option[Cons[Int, Nil.type]] = compileRegex[Cons['(', Cons['1', Cons['2', Cons['3', Cons[')', Nil.type]]]]]](Cons('(', Cons('1', Cons('2', Cons('3', Cons(')', Nil))))))
