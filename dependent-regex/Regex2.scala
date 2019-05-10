@@ -11,15 +11,6 @@ object Lst {
             if (this.isInstanceOf[Nil.type]) that
             else Cons(this.asInstanceOf[Cons].head, this.asInstanceOf[Cons].tail ++ that)
 
-        /** Returns a new list containing all elements of this collection except the last.
-         *
-         *  @return a list constisting of all elements of this collection except the last one.
-         */
-        dependent def init: LstChar =
-            if (this.isInstanceOf[Nil.type]) throw new UnsupportedOperationException("init of empty list")
-            else if (this.asInstanceOf[Cons].tail.isInstanceOf[Nil.type]) Nil
-            else Cons(this.asInstanceOf[Cons].head, this.asInstanceOf[Cons].tail.init)
-
         /** Converts this list to a scala.collection.immutable.List.
          *
          *  @return a scala.collection.immutable.List containing all elements of this list.
@@ -162,9 +153,16 @@ object Regex {
         } else {
             if (regex.asInstanceOf[Cons].head == '[') compile(regex.asInstanceOf[Cons].tail, currType, chars, true, classes + 1, groupsTypesRepr, cachedRegex)
             else if (regex.asInstanceOf[Cons].head == '(') compile(regex.asInstanceOf[Cons].tail, Empty, 0, false, 0, groupsTypesRepr, cachedRegex)
-            else if (regex.asInstanceOf[Cons].head == ')') compile(regex.asInstanceOf[Cons].tail, currType, chars, charClass, classes, addTypeToList(currType, groupsTypesRepr, chars), cachedRegex)
-            else if (regex.asInstanceOf[Cons].head == '?') compile(regex.asInstanceOf[Cons].tail, currType, chars, charClass, classes, addTypeToList(Optional(currType), groupsTypesRepr.asInstanceOf[Cons].init, chars), cachedRegex)
-            else if (regex.asInstanceOf[Cons].head == '*') compile(regex.asInstanceOf[Cons].tail, currType, chars, charClass, classes, addTypeToList(Star(currType), groupsTypesRepr.asInstanceOf[Cons].init, chars), cachedRegex)
+            else if (regex.asInstanceOf[Cons].head == ')') {
+                dependent val tailR = regex.asInstanceOf[Cons].tail
+                if (tailR.isInstanceOf[Nil.type]) {
+                    compile(tailR, currType, chars, charClass, classes, addTypeToList(currType, groupsTypesRepr, chars), cachedRegex)
+                } else {
+                    if (tailR.asInstanceOf[Cons].head == '*') compile(tailR.asInstanceOf[Cons].tail, currType, chars, charClass, classes, addTypeToList(Star(currType), groupsTypesRepr, chars), cachedRegex)
+                    else if (tailR.asInstanceOf[Cons].head == '?') compile(tailR.asInstanceOf[Cons].tail, currType, chars, charClass, classes, addTypeToList(Optional(currType), groupsTypesRepr, chars), cachedRegex)
+                    else compile(tailR, currType, chars, charClass, classes, addTypeToList(currType, groupsTypesRepr, chars), cachedRegex)
+                }
+            }
             else if (isDigit(regex.asInstanceOf[Cons].head) && (currType.isInstanceOf[Empty.type] || currType.isInstanceOf[Integ.type] || currType.isInstanceOf[Optional] || currType.isInstanceOf[Star])) {
                 if (currType.isInstanceOf[Optional]) {
                     dependent val tp = currType.asInstanceOf[Optional].tp
@@ -418,13 +416,20 @@ object RegexTests {
 //     import Regex._
 
 
-//     dependent def createLstChar(length: Int): LstChar = createLstCharAux(length, Nil)
+//     // dependent def createLstChar(length: Int): LstChar = createLstCharAux(length, Nil)
 
-//     dependent private def createLstCharAux(length: Int, acc: LstChar): LstChar = {
+//     // dependent private def createLstCharAux(length: Int, acc: LstChar): LstChar = {
+//     //     if (length == 0) acc
+//     //     else createLstCharAux(length - 2, acc ++ Cons('(', Cons(')', Nil)))
+//     // }
+
+//     dependent def createRegex(length: Int): LstChar = createRegexAux(length, Nil)
+
+//     dependent private def createRegexAux(length: Int, acc: LstChar): LstChar = {
 //         if (length == 0) acc
-//         else createLstCharAux(length - 2, acc ++ Cons('(', Cons(')', Nil)))
+//         else createRegexAux(length - 4, acc ++ Cons('(', Cons('a', Cons('z', Cons(')', Nil)))))
 //     }
 
-//     val balanced1: true = checkParens(createLstChar(156))
+//     val balanced1: true = checkParens(createRegex(192))
 // }
 
