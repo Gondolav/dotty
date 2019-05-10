@@ -143,40 +143,45 @@ object Regex {
         }
         case true => CheckBrackets[CachedRegex] match {
             case false => RegexError.type
-            case true => CompileCharClass[Input, CurrType, Chars, CharClass, Classes, GroupsTypesRepr, CachedRegex]
+            case true => CompileCharClass[Input, CurrType, Chars, CharClass, Classes, GroupsTypesRepr, CachedRegex, CurrType]
         }
     }
 
-    type CompileCharClass[Input <: Lst, CurrType <: Type, Chars <: Nat, CharClass <: Boolean, Classes <: Nat, GroupsTypesRepr <: Lst, CachedRegex <: Lst] = Input match {
-        case Cons['-', xs] => CompileCharClass[xs, CurrType, Chars, CharClass, Classes, GroupsTypesRepr, CachedRegex]
+    type IfEmpty[Scrutinee <: Type, T1 <: Type, T2 <: Type] <: Type = Scrutinee match {
+        case Empty.type => T1
+        case _ => T2
+    }
+
+    type CompileCharClass[Input <: Lst, CurrType <: Type, Chars <: Nat, CharClass <: Boolean, Classes <: Nat, GroupsTypesRepr <: Lst, CachedRegex <: Lst, TypeBeforeClass <: Type] = Input match {
+        case Cons['-', xs] => CompileCharClass[xs, CurrType, Chars, CharClass, Classes, GroupsTypesRepr, CachedRegex, TypeBeforeClass]
         case Cons[']', xs] => Classes match {
             case Suc[Zero] => CurrType match {
                 case Str.type => xs match {
-                    case Cons['*', xss] => Compile[xss, Star[CurrType], Chars, false, Classes, GroupsTypesRepr, CachedRegex]
-                    case Cons['?', xss] => Compile[xss, Optional[Chr.type], Chars, false, Classes, GroupsTypesRepr, CachedRegex]
+                    case Cons['*', xss] => Compile[xss, IfEmpty[TypeBeforeClass, Star[CurrType], CurrType], Chars, false, Classes, GroupsTypesRepr, CachedRegex]
+                    case Cons['?', xss] => Compile[xss, IfEmpty[TypeBeforeClass, Optional[Chr.type], Chr.type], Chars, false, Classes, GroupsTypesRepr, CachedRegex]
                     case _ => Compile[xs, Chr.type, Chars, false, Classes, GroupsTypesRepr, CachedRegex]
                 }
                 case _ => xs match {
-                    case Cons['*', xss] => Compile[xss, Star[CurrType], Chars, false, Classes, GroupsTypesRepr, CachedRegex]
-                    case Cons['?', xss] => Compile[xss, Optional[CurrType], Chars, false, Classes, GroupsTypesRepr, CachedRegex]
+                    case Cons['*', xss] => Compile[xss, IfEmpty[TypeBeforeClass, Star[CurrType], CurrType], Chars, false, Classes, GroupsTypesRepr, CachedRegex]
+                    case Cons['?', xss] => Compile[xss, IfEmpty[TypeBeforeClass, Optional[CurrType], CurrType], Chars, false, Classes, GroupsTypesRepr, CachedRegex]
                     case _ => Compile[xs, CurrType, Chars, false, Classes, GroupsTypesRepr, CachedRegex]
                 }
             }
             case _ => xs match {
-                    case Cons['*', xss] => Compile[xss, Star[CurrType], Chars, false, Classes, GroupsTypesRepr, CachedRegex]
-                    case Cons['?', xss] => Compile[xss, Optional[CurrType], Chars, false, Classes, GroupsTypesRepr, CachedRegex]
+                    case Cons['*', xss] => Compile[xss, IfEmpty[TypeBeforeClass, Star[CurrType], CurrType], Chars, false, Classes, GroupsTypesRepr, CachedRegex]
+                    case Cons['?', xss] => Compile[xss, IfEmpty[TypeBeforeClass, Optional[CurrType], CurrType], Chars, false, Classes, GroupsTypesRepr, CachedRegex]
                     case _ => Compile[xs, CurrType, Chars, false, Classes, GroupsTypesRepr, CachedRegex]
                 }
         }
         case Cons[x, xs] => IsDigit[x] match {
             case true => CurrType match {
-                case Empty.type => CompileCharClass[xs, Integ.type, Chars, CharClass, Classes, GroupsTypesRepr, CachedRegex]
-                case Integ.type => CompileCharClass[xs, Integ.type, Chars, CharClass, Classes, GroupsTypesRepr, CachedRegex]
-                case Optional[Integ.type] => CompileCharClass[xs, Integ.type, Chars, CharClass, Classes, GroupsTypesRepr, CachedRegex]
-                case Star[Integ.type] => CompileCharClass[xs, Integ.type, Chars, CharClass, Classes, GroupsTypesRepr, CachedRegex]
-                case _ => CompileCharClass[xs, Str.type, Chars, CharClass, Classes, GroupsTypesRepr, CachedRegex]
+                case Empty.type => CompileCharClass[xs, Integ.type, Chars, CharClass, Classes, GroupsTypesRepr, CachedRegex, TypeBeforeClass]
+                case Integ.type => CompileCharClass[xs, Integ.type, Chars, CharClass, Classes, GroupsTypesRepr, CachedRegex, TypeBeforeClass]
+                case Optional[Integ.type] => CompileCharClass[xs, Integ.type, Chars, CharClass, Classes, GroupsTypesRepr, CachedRegex, TypeBeforeClass]
+                case Star[Integ.type] => CompileCharClass[xs, Integ.type, Chars, CharClass, Classes, GroupsTypesRepr, CachedRegex, TypeBeforeClass]
+                case _ => CompileCharClass[xs, Str.type, Chars, CharClass, Classes, GroupsTypesRepr, CachedRegex, TypeBeforeClass]
             }
-            case false => CompileCharClass[xs, Str.type, Chars, CharClass, Classes, GroupsTypesRepr, CachedRegex]
+            case false => CompileCharClass[xs, Str.type, Chars, CharClass, Classes, GroupsTypesRepr, CachedRegex, TypeBeforeClass]
         }
     }
 
@@ -224,7 +229,7 @@ object Regex {
     }.asInstanceOf[CompileRegex[Input]]
 
     private def compile[Input <: Lst, CurrType <: Type, Chars <: Nat, CharClass <: Boolean, Classes <: Nat, GroupsTypesRepr <: Lst, CachedRegex <: Lst](regex: List[Any], currType: CurrType, chars: Int, charClass: CharClass, classes: Int, groupsTypesRepr: GroupsTypesRepr, cachedRegex: => List[Any]): Compile[Input, CurrType, Chars, CharClass, Classes, GroupsTypesRepr, CachedRegex] = {
-        if (charClass) compileCharClass(regex, currType, chars, charClass, classes, groupsTypesRepr, ' ', cachedRegex)
+        if (charClass) compileCharClass(regex, currType, chars, charClass, classes, groupsTypesRepr, ' ', cachedRegex, currType)
         else regex match {
             case scala.collection.immutable.Nil => buildPattern[GroupsTypesRepr](cachedRegex, groupsTypesRepr.toList)
             case '[' :: xs => compile(xs, currType, chars, true, classes + 1, groupsTypesRepr, cachedRegex)
@@ -240,9 +245,9 @@ object Regex {
         }
     }.asInstanceOf[Compile[Input, CurrType, Chars, CharClass, Classes, GroupsTypesRepr, CachedRegex]]
 
-    private def compileCharClass[Input <: Lst, CurrType <: Type, Chars <: Nat, CharClass <: Boolean, Classes <: Nat, GroupsTypesRepr <: Lst, CachedRegex <: Lst](regex: List[Any], currType: CurrType, chars: Int, charClass: CharClass, classes: Int, groupsTypesRepr: GroupsTypesRepr, firstElemInClass: Char, cachedRegex: => List[Any]): CompileCharClass[Input, CurrType, Chars, CharClass, Classes, GroupsTypesRepr, CachedRegex] = {
+    private def compileCharClass[Input <: Lst, CurrType <: Type, Chars <: Nat, CharClass <: Boolean, Classes <: Nat, GroupsTypesRepr <: Lst, CachedRegex <: Lst, TypeBeforeClass <: Type](regex: List[Any], currType: CurrType, chars: Int, charClass: CharClass, classes: Int, groupsTypesRepr: GroupsTypesRepr, firstElemInClass: Char, cachedRegex: => List[Any], typeBeforeClass: TypeBeforeClass): CompileCharClass[Input, CurrType, Chars, CharClass, Classes, GroupsTypesRepr, CachedRegex, TypeBeforeClass] = {
         (regex: @unchecked) match {
-            case '-' :: xs => compileCharClass(xs, currType, chars, charClass, classes, groupsTypesRepr, firstElemInClass, cachedRegex)
+            case '-' :: xs => compileCharClass(xs, currType, chars, charClass, classes, groupsTypesRepr, firstElemInClass, cachedRegex, typeBeforeClass)
             case ']' :: xs => {
                 val ifChar = if (classes == 1 && currType == Str) Chr else currType
                 xs match {
@@ -253,10 +258,10 @@ object Regex {
             }
             case x :: xs =>
                 if (firstElemInClass > x.asInstanceOf[Char]) RegexError
-                else if (x.asInstanceOf[Char].isDigit && (currType == Empty || currType == Integ || currType == Optional(Integ) || currType == Star(Integ))) compileCharClass(xs, Integ, chars, charClass, classes, groupsTypesRepr, x.asInstanceOf[Char], cachedRegex)
-                else compileCharClass(xs, Str, chars, charClass, classes, groupsTypesRepr, x.asInstanceOf[Char], cachedRegex)
+                else if (x.asInstanceOf[Char].isDigit && (currType == Empty || currType == Integ || currType == Optional(Integ) || currType == Star(Integ))) compileCharClass(xs, Integ, chars, charClass, classes, groupsTypesRepr, x.asInstanceOf[Char], cachedRegex, typeBeforeClass)
+                else compileCharClass(xs, Str, chars, charClass, classes, groupsTypesRepr, x.asInstanceOf[Char], cachedRegex, typeBeforeClass)
         }
-    }.asInstanceOf[CompileCharClass[Input, CurrType, Chars, CharClass, Classes, GroupsTypesRepr, CachedRegex]]
+    }.asInstanceOf[CompileCharClass[Input, CurrType, Chars, CharClass, Classes, GroupsTypesRepr, CachedRegex, TypeBeforeClass]]
 
     // Adds the given type to the given list by concatenating to it its representation
     private def addTypeToList(t: Type, l: Lst, chars: Int): Lst = {
@@ -459,6 +464,7 @@ object RegexTests {
     val x23: String => Option[Cons[Option[Char], Nil.type]] = compileRegex[Cons['(', Cons['[', Cons['a', Cons['-', Cons['z', Cons[']', Cons['?', Cons[')', Nil.type]]]]]]]]](Cons('(', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons('?', Cons(')', Nil)))))))))
     val x24: String => Option[Cons[Option[StarMatch[Int]], Nil.type]] = compileRegex[Cons['(', Cons['[', Cons['0', Cons['-', Cons['9', Cons[']', Cons['*', Cons[')', Nil.type]]]]]]]]](Cons('(', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('*', Cons(')', Nil)))))))))
     val x25: String => Option[Cons[Option[Int], Nil.type]] = compileRegex[Cons['(', Cons['[', Cons['0', Cons['-', Cons['9', Cons[']', Cons['?', Cons[')', Nil.type]]]]]]]]](Cons('(', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('?', Cons(')', Nil)))))))))
+    val x26: String => Option[Cons[Int, Nil.type]] = compileRegex[Cons['(', Cons['[', Cons['0', Cons['-', Cons['9', Cons[']', Cons['[', Cons['0', Cons['-', Cons['9', Cons[']', Cons['?', Cons[')', Nil.type]]]]]]]]]]]]]](Cons('(', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('?', Cons(')', Nil))))))))))))))
 }
 
 // object Benchmarks {
@@ -466,7 +472,7 @@ object RegexTests {
 //     import CheckDelimiters._
 //     import Regex._
 
-//     val balanced1 = compileRegex[Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Nil.type]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]](Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Nil)))))))))))))))))))))))))))))))))))))))))))))))))
+//     val balanced1 = compileRegex[Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Nil.type]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]](Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Nil)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
 // }
 
 // object Examples {

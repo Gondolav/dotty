@@ -148,7 +148,7 @@ object Regex {
     dependent private def compile(regex: LstChar, currType: Type, chars: Int, charClass: Boolean, classes: Int, groupsTypesRepr: LstChar, cachedRegex: => LstChar): Any = {
         if (regex.isInstanceOf[Nil.type]) buildPattern(cachedRegex, groupsTypesRepr)
         else if (charClass) {
-            if (checkBrackets(cachedRegex)) compileCharClass(regex, currType, chars, charClass, classes, groupsTypesRepr, cachedRegex, ' ')
+            if (checkBrackets(cachedRegex)) compileCharClass(regex, currType, chars, charClass, classes, groupsTypesRepr, cachedRegex, ' ', currType)
             else RegexError
         } else {
             if (regex.asInstanceOf[Cons].head == '[') compile(regex.asInstanceOf[Cons].tail, currType, chars, true, classes + 1, groupsTypesRepr, cachedRegex)
@@ -180,30 +180,30 @@ object Regex {
         }
     }
 
-    dependent private def compileCharClass(regex: LstChar, currType: Type, chars: Int, charClass: Boolean, classes: Int, groupsTypesRepr: LstChar, cachedRegex: => LstChar, firstElemInClass: Char): Any = {
-        if (regex.asInstanceOf[Cons].head == '-') compileCharClass(regex.asInstanceOf[Cons].tail, currType, chars, charClass, classes, groupsTypesRepr, cachedRegex, firstElemInClass)
+    dependent private def compileCharClass(regex: LstChar, currType: Type, chars: Int, charClass: Boolean, classes: Int, groupsTypesRepr: LstChar, cachedRegex: => LstChar, firstElemInClass: Char, typeBeforeClass: Type): Any = {
+        if (regex.asInstanceOf[Cons].head == '-') compileCharClass(regex.asInstanceOf[Cons].tail, currType, chars, charClass, classes, groupsTypesRepr, cachedRegex, firstElemInClass, typeBeforeClass)
         else if (regex.asInstanceOf[Cons].head == ']') {
             dependent val ifChar = if (classes == 1 && currType.isInstanceOf[Str.type]) Chr else currType
             dependent val tailR = regex.asInstanceOf[Cons].tail
-            if (tailR.asInstanceOf[Cons].head == '*') compile(tailR.asInstanceOf[Cons].tail, Star(currType), chars, false, classes, groupsTypesRepr, cachedRegex)
-            else if (tailR.asInstanceOf[Cons].head == '?') compile(tailR.asInstanceOf[Cons].tail, Optional(ifChar), chars, false, classes, groupsTypesRepr, cachedRegex)
+            if (tailR.asInstanceOf[Cons].head == '*') compile(tailR.asInstanceOf[Cons].tail, if (typeBeforeClass.isInstanceOf[Empty.type]) Star(currType) else currType, chars, false, classes, groupsTypesRepr, cachedRegex)
+            else if (tailR.asInstanceOf[Cons].head == '?') compile(tailR.asInstanceOf[Cons].tail, if (typeBeforeClass.isInstanceOf[Empty.type]) Optional(ifChar) else ifChar, chars, false, classes, groupsTypesRepr, cachedRegex)
             else compile(regex.asInstanceOf[Cons].tail, ifChar, chars, false, classes, groupsTypesRepr, cachedRegex)
         }
         else if (firstElemInClass > regex.asInstanceOf[Cons].head) RegexError
         else if (isDigit(regex.asInstanceOf[Cons].head) && (currType.isInstanceOf[Empty.type] || currType.isInstanceOf[Integ.type] || currType.isInstanceOf[Optional] || currType.isInstanceOf[Star])) {
                 if (currType.isInstanceOf[Optional]) {
                     dependent val tp = currType.asInstanceOf[Optional].tp
-                    if (tp.isInstanceOf[Integ.type]) compileCharClass(regex.asInstanceOf[Cons].tail, Integ, chars, charClass, classes, groupsTypesRepr, cachedRegex, regex.asInstanceOf[Cons].head)
-                    else compileCharClass(regex.asInstanceOf[Cons].tail, Str, chars, charClass, classes, groupsTypesRepr, cachedRegex, regex.asInstanceOf[Cons].head)
+                    if (tp.isInstanceOf[Integ.type]) compileCharClass(regex.asInstanceOf[Cons].tail, Integ, chars, charClass, classes, groupsTypesRepr, cachedRegex, regex.asInstanceOf[Cons].head, typeBeforeClass)
+                    else compileCharClass(regex.asInstanceOf[Cons].tail, Str, chars, charClass, classes, groupsTypesRepr, cachedRegex, regex.asInstanceOf[Cons].head, typeBeforeClass)
                 }
                 else if (currType.isInstanceOf[Star]) {
                     dependent val tp = currType.asInstanceOf[Star].tp
-                    if (tp.isInstanceOf[Integ.type]) compileCharClass(regex.asInstanceOf[Cons].tail, Integ, chars, charClass, classes, groupsTypesRepr, cachedRegex, regex.asInstanceOf[Cons].head)
-                    else compileCharClass(regex.asInstanceOf[Cons].tail, Str, chars, charClass, classes, groupsTypesRepr, cachedRegex, regex.asInstanceOf[Cons].head)
+                    if (tp.isInstanceOf[Integ.type]) compileCharClass(regex.asInstanceOf[Cons].tail, Integ, chars, charClass, classes, groupsTypesRepr, cachedRegex, regex.asInstanceOf[Cons].head, typeBeforeClass)
+                    else compileCharClass(regex.asInstanceOf[Cons].tail, Str, chars, charClass, classes, groupsTypesRepr, cachedRegex, regex.asInstanceOf[Cons].head, typeBeforeClass)
                 }
-                else compileCharClass(regex.asInstanceOf[Cons].tail, Integ, chars, charClass, classes, groupsTypesRepr, cachedRegex, regex.asInstanceOf[Cons].head)
+                else compileCharClass(regex.asInstanceOf[Cons].tail, Integ, chars, charClass, classes, groupsTypesRepr, cachedRegex, regex.asInstanceOf[Cons].head, typeBeforeClass)
             }
-        else compileCharClass(regex.asInstanceOf[Cons].tail, Str, chars, charClass, classes, groupsTypesRepr, cachedRegex, regex.asInstanceOf[Cons].head)
+        else compileCharClass(regex.asInstanceOf[Cons].tail, Str, chars, charClass, classes, groupsTypesRepr, cachedRegex, regex.asInstanceOf[Cons].head, typeBeforeClass)
     }
 
     dependent private def isDigit(c: Char): Boolean = '0' <= c && c <= '9'
@@ -408,6 +408,7 @@ object RegexTests {
     val x23: String => Option[{ ConsA(??? : Option[Char], NilA) }] = compileRegex(Cons('(', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons('?', Cons(')', Nil)))))))))
     val x24: String => Option[{ ConsA(??? : Option[StarMatch[Int]], NilA) }] = compileRegex(Cons('(', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('*', Cons(')', Nil)))))))))
     val x25: String => Option[{ ConsA(??? : Option[Int], NilA) }] = compileRegex(Cons('(', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('?', Cons(')', Nil)))))))))
+    val x26: String => Option[{ ConsA(??? : Int, NilA) }] = compileRegex(Cons('(', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('?', Cons(')', Nil))))))))))))))
 }
 
 // object Benchmarks {
