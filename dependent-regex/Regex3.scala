@@ -235,7 +235,7 @@ object Regex {
                 case _ => compile(xs, currType, chars, charClass, classes, addTypeToList(currType, groupsTypesRepr, chars), cachedRegex)
             }
             case x :: xs =>
-                if (x.asInstanceOf[Char].isDigit && (currType.isInstanceOf[Empty.type] || currType.isInstanceOf[Integ.type] || currType.isInstanceOf[Optional[Integ.type]] || currType.isInstanceOf[Star[Integ.type]])) compile(xs, Integ, chars, charClass, classes, groupsTypesRepr, cachedRegex)
+                if (x.asInstanceOf[Char].isDigit && (currType == Empty || currType == Integ || currType == Optional(Integ) || currType == Star(Integ))) compile(xs, Integ, chars, charClass, classes, groupsTypesRepr, cachedRegex)
                 else compile(xs, Str, chars + 1, charClass, classes, groupsTypesRepr, cachedRegex)
         }
     }.asInstanceOf[Compile[Input, CurrType, Chars, CharClass, Classes, GroupsTypesRepr, CachedRegex]]
@@ -244,16 +244,16 @@ object Regex {
         (regex: @unchecked) match {
             case '-' :: xs => compileCharClass(xs, currType, chars, charClass, classes, groupsTypesRepr, firstElemInClass, cachedRegex)
             case ']' :: xs => {
-                val ifChar = if (classes == 1 && currType.isInstanceOf[Str.type]) Chr else currType
+                val ifChar = if (classes == 1 && currType == Str) Chr else currType
                 xs match {
-                    case '?' :: xss => compile(xss, Optional(ifChar), chars, false, classes, groupsTypesRepr, cachedRegex)
                     case '*' :: xss => compile(xss, Star(currType), chars, false, classes, groupsTypesRepr, cachedRegex)
+                    case '?' :: xss => compile(xss, Optional(ifChar), chars, false, classes, groupsTypesRepr, cachedRegex)
                     case _ => compile(xs, ifChar, chars, false, classes, groupsTypesRepr, cachedRegex)
                 }
             }
             case x :: xs =>
                 if (firstElemInClass > x.asInstanceOf[Char]) RegexError
-                else if (x.asInstanceOf[Char].isDigit && (currType.isInstanceOf[Empty.type] || currType.isInstanceOf[Integ.type] || currType.isInstanceOf[Optional[Integ.type]] || currType.isInstanceOf[Star[Integ.type]])) compileCharClass(xs, Integ, chars, charClass, classes, groupsTypesRepr, x.asInstanceOf[Char], cachedRegex)
+                else if (x.asInstanceOf[Char].isDigit && (currType == Empty || currType == Integ || currType == Optional(Integ) || currType == Star(Integ))) compileCharClass(xs, Integ, chars, charClass, classes, groupsTypesRepr, x.asInstanceOf[Char], cachedRegex)
                 else compileCharClass(xs, Str, chars, charClass, classes, groupsTypesRepr, x.asInstanceOf[Char], cachedRegex)
         }
     }.asInstanceOf[CompileCharClass[Input, CurrType, Chars, CharClass, Classes, GroupsTypesRepr, CachedRegex]]
