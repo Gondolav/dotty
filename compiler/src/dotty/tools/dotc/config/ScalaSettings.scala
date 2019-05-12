@@ -148,7 +148,7 @@ class ScalaSettings extends Settings.SettingGroup {
 
   val YnoDecodeStacktraces: Setting[Boolean] = BooleanSetting("-Yno-decode-stacktraces", "Show raw StackOverflow stacktraces, instead of decoding them into triggering operations.")
 
-  val YtypeNormalizationFuel = IntSetting("-Ytype-normalization-fuel", "Maximal number of steps when evaluating type expressions.", 2222222)
+  val YtypeNormalizationFuel = IntSetting("-Ytype-normalization-fuel", "Maximal number of steps when evaluating type expressions.", 222222222)
 
   val YinstrumentClosures: Setting[Boolean] = BooleanSetting("-Yinstrument-closures", "Add instrumentation code that counts closure creations.")
   val YinstrumentAllocations: Setting[Boolean] = BooleanSetting("-Yinstrument-allocations", "Add instrumentation code that counts allocations.")
