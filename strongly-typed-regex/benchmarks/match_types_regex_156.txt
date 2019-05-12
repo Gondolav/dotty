@@ -1,0 +1,65 @@
+[0m[[0m[0minfo[0m] [0m[0mLoading settings for project dotty-build-build from build.sbt ...[0m
+[0m[[0m[0minfo[0m] [0m[0mLoading project definition from /Users/avenezia/dotty/project/project[0m
+[0m[[0m[0minfo[0m] [0m[0mLoading settings for project dotty-build from plugins.sbt,build.sbt ...[0m
+[0m[[0m[0minfo[0m] [0m[0mLoading project definition from /Users/avenezia/dotty/project[0m
+[0m[[0m[0minfo[0m] [0m[0mLoading settings for project dotty from build.sbt ...[0m
+[0m[[0m[0minfo[0m] [0m[0mLoading settings for project dotty-semanticdb-input from build.sbt ...[0m
+[0m[[0m[0minfo[0m] [0m[0mResolving key references (14593 settings) ...[0m
+[0m[[0m[0minfo[0m] [0m[0mSet current project to dotty (in build file:/Users/avenezia/dotty/)[0m
+[0m[[0m[33mwarn[0m] [0m[0mMultiple main classes detected.  Run 'show discoveredMainClasses' to see the list[0m
+[0m[[0m[33mwarn[0m] [0m[0mMultiple main classes detected.  Run 'show discoveredMainClasses' to see the list[0m
+[0m[[0m[0minfo[0m] [0m[0mRunning (fork) dotty.tools.benchmarks.Bench 40 40 3 dependent-regex/Regex3.scala[0m
+# JMH version: 1.19
+# VM version: JDK 1.8.0_131, VM 25.131-b11
+# VM invoker: /Library/Java/JavaVirtualMachines/jdk1.8.0_131.jdk/Contents/Home/jre/bin/java
+# VM options: -Xms2G -Xmx2G -Xss16m
+# Warmup: 40 iterations, 1 s each
+# Measurement: 40 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: dotty.tools.benchmarks.Worker.compile
+
+# Run progress: 0.00% complete, ETA 00:04:00
+# Fork: 1 of 3
+# Warmup Iteration   1: <failure>
+
+java.lang.OutOfMemoryError: GC overhead limit exceeded
+	at scala.collection.immutable.List.$colon$colon(List.scala:115)
+	at dotty.tools.dotc.core.Types$TypeMap.mapArgs$1(Types.scala:4741)
+	at dotty.tools.dotc.core.Types$TypeMap.mapOver(Types.scala:4745)
+	at dotty.tools.dotc.core.TrackingTypeComparer$$anon$2.apply(TypeComparer.scala:2160)
+	at dotty.tools.dotc.core.TrackingTypeComparer.matchCases(TypeComparer.scala:2185)
+	at dotty.tools.dotc.core.Types$MatchType.liftedTree4$1(Types.scala:3832)
+	at dotty.tools.dotc.core.Types$MatchType.reduced(Types.scala:3837)
+	at dotty.tools.dotc.core.Types$MatchType.tryNormalize(Types.scala:3794)
+	at dotty.tools.dotc.core.Types$AppliedType.tryMatchAlias$1(Types.scala:3477)
+	at dotty.tools.dotc.core.Types$AppliedType.tryNormalize(Types.scala:3490)
+	at dotty.tools.dotc.core.TypeOps.simplify(TypeOps.scala:113)
+	at dotty.tools.dotc.core.Types$Type.simplified(Types.scala:1550)
+	at dotty.tools.dotc.core.TrackingTypeComparer$$anon$1.apply(TypeComparer.scala:2149)
+	at dotty.tools.dotc.core.TrackingTypeComparer$$anon$1.apply(TypeComparer.scala:2147)
+	at dotty.tools.dotc.core.Types$TypeAccumulator.foldArgs$1(Types.scala:5165)
+	at dotty.tools.dotc.core.Types$TypeAccumulator.foldOver(Types.scala:5169)
+	at dotty.tools.dotc.core.TrackingTypeComparer$$anon$1.apply(TypeComparer.scala:2152)
+	at dotty.tools.dotc.core.TrackingTypeComparer$$anon$1.apply(TypeComparer.scala:2147)
+	at dotty.tools.dotc.core.TrackingTypeComparer.matchCases(TypeComparer.scala:2184)
+	at dotty.tools.dotc.core.Types$MatchType.liftedTree4$1(Types.scala:3832)
+	at dotty.tools.dotc.core.Types$MatchType.reduced(Types.scala:3837)
+	at dotty.tools.dotc.core.TypeComparer.thirdTry$1(TypeComparer.scala:620)
+	at dotty.tools.dotc.core.TypeComparer.secondTry$1(TypeComparer.scala:384)
+	at dotty.tools.dotc.core.TypeComparer.firstTry$1(TypeComparer.scala:372)
+	at dotty.tools.dotc.core.TypeComparer.recur(TypeComparer.scala:1025)
+	at dotty.tools.dotc.core.TypeComparer.isSubType(TypeComparer.scala:152)
+	at dotty.tools.dotc.core.TypeComparer.isSubApproxHi$1(TypeComparer.scala:1014)
+	at dotty.tools.dotc.core.TypeComparer.fallback$2$$anonfun$2(TypeComparer.scala:910)
+	at dotty.tools.dotc.core.TypeComparer$$Lambda$792/1191945912.apply$mcZ$sp(Unknown Source)
+	at dotty.runtime.function.JFunction0$mcZ$sp.apply(JFunction0$mcZ$sp.java:12)
+	at dotty.tools.dotc.core.TypeComparer.either(TypeComparer.scala:1231)
+	at dotty.tools.dotc.core.TypeComparer.fallback$3(TypeComparer.scala:910)
+
+
+Benchmark had encountered error, and fail on error was requested
+[0m[[0m[31merror[0m] [0m[0mNonzero exit code returned from runner: 1[0m
+[0m[[0m[31merror[0m] [0m[0m(dotty-bench-bootstrapped / Jmh / [31mrun[0m) Nonzero exit code returned from runner: 1[0m
+[0m[[0m[31merror[0m] [0m[0mTotal time: 1301 s, completed May 11, 2019 3:16:33 PM[0m

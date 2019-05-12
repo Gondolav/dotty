@@ -434,3 +434,21 @@ object RegexTests {
 //     val balanced1: true = checkParens(createRegex(192))
 // }
 
+// object Examples {
+//     import Lst._
+//     import Regex._
+
+//     //"(http[s-s]?://)?(www.)?([a-z][a-z]*)(.)([a-z][a-z][a-z]*)(/[a-z]*)*"
+//     val regexURL: String => Option[{ ConsA(??? : Option[String], ConsA(??? : Option[String], ConsA(??? : String, ConsA(??? : Char, ConsA(??? : String, ConsA(??? : Option[StarMatch[String], NilA)))))) }] = compileRegex[]()
+//     val informations: Option[{ ConsA(??? : Option[String], ConsA(??? : String, Cons(??? : String, ConsA(??? : Option[StarMatch[String], NilA)))) }] = regexURL("https://www.epfl.ch/schools/ic/") match {
+//         case None => None
+//         case Some(ConsA(protocol, ConsA(_, ConsA(hostname, ConsA(_, ConsA(domain, ConsA(path, ConsA(_, NilA)))))))) => Some(ConsA(protocol.asInstanceOf[Option[String]], ConsA(hostname.asInstanceOf[String], ConsA(domain.asInstanceOf[String], ConsA(path.asInstanceOf[StarMatch[[String]], NilA))))) // here if an optional is not present, its value is None and its type is known at compile time
+//     }
+
+//     val protocolName: String = informations.get.head.dropRight(3) // compile error
+
+//     Total time: 228 s, completed May 9, 2019 7:33:37 PM
+//     //(Total time: )([0-9][0-9]*)( s, completed )([a-z][a-z]*)( )([0-9][0-9]?)(, )([0-9][0-9][0-9][0-9])( )([0-9][0-9]?)(:)([0-9][0-9])(:)([0-9][0-9])( )([a-z][a-z])
+//     //val regexCompilationResult = compileRegex()
+// }
+
