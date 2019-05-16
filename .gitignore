@@ -85,3 +85,4 @@ community-build/dotty-bootstrapped.version
 community-build/sbt-dotty-sbt
 
 regex-benchmark.sh
+strongly-typed-regex/BuildCons.scala
