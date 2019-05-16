@@ -37,7 +37,7 @@ object Lst {
             case Optional[t] =>
                 ToType[t, Cons[Option[Char], ToTypesList[xs]], Cons[Option[String], ToTypesList[xs]], Cons[Option[Int], ToTypesList[xs]]]
             case Star[t] =>
-                ToType[t, Cons[Option[StarMatch[Char]], ToTypesList[xs]], Cons[Option[StarMatch[String]], ToTypesList[xs]], Cons[Option[StarMatch[Int]], ToTypesList[xs]]]
+                ToType[t, Cons[Option[StarMatch[String]], ToTypesList[xs]], Cons[Option[StarMatch[String]], ToTypesList[xs]], Cons[Option[StarMatch[Int]], ToTypesList[xs]]]
             case _ =>
                 ToType[x, Cons[Char, ToTypesList[xs]], Cons[String, ToTypesList[xs]], Cons[Int, ToTypesList[xs]]]
         }
@@ -187,7 +187,7 @@ object Regex {
 
     type AddTypeToList[T <: Type, L <: Lst, Chars <: Nat] <: Lst = T match {
         case Optional[t] => AddType[t, L, Chars, Cons[Optional[Chr.type], Nil.type], Cons[Optional[Str.type], Nil.type], Cons[Optional[Integ.type], Nil.type]]
-        case Star[t] => AddType[t, L, Chars, Cons[Star[Chr.type], Nil.type], Cons[Star[Str.type], Nil.type], Cons[Star[Integ.type], Nil.type]]
+        case Star[t] => AddType[t, L, Chars, Cons[Star[Str.type], Nil.type], Cons[Star[Str.type], Nil.type], Cons[Star[Integ.type], Nil.type]]
         case _ => AddType[T, L, Chars, Cons[Chr.type, Nil.type], Cons[Str.type, Nil.type], Cons[Integ.type, Nil.type]]
     }
 
@@ -251,8 +251,8 @@ object Regex {
             case ']' :: xs => {
                 val ifChar = if (classes == 1 && currType == Str) Chr else currType
                 xs match {
-                    case '*' :: xss => compile(xss, Star(currType), chars, false, classes, groupsTypesRepr, cachedRegex)
-                    case '?' :: xss => compile(xss, Optional(ifChar), chars, false, classes, groupsTypesRepr, cachedRegex)
+                    case '*' :: xss => compile(xss, if (typeBeforeClass == Empty) Star(currType) else currType, chars, false, classes, groupsTypesRepr, cachedRegex)
+                    case '?' :: xss => compile(xss, if (typeBeforeClass == Empty) Optional(ifChar) else ifChar, chars, false, classes, groupsTypesRepr, cachedRegex)
                     case _ => compile(xs, ifChar, chars, false, classes, groupsTypesRepr, cachedRegex)
                 }
             }
@@ -275,7 +275,7 @@ object Regex {
 
         t match {
             case Optional(tp) => addType(tp, l, chars, Cons(Optional(Chr), Nil), Cons(Optional(Str), Nil), Cons(Optional(Integ), Nil))
-            case Star(tp) => addType(tp, l, chars, Cons(Star(Chr), Nil), Cons(Star(Str), Nil), Cons(Star(Integ), Nil))
+            case Star(tp) => addType(tp, l, chars, Cons(Star(Str), Nil), Cons(Star(Str), Nil), Cons(Star(Integ), Nil))
             case _ => addType(t, l, chars, Cons(Chr, Nil), Cons(Str, Nil), Cons(Integ, Nil))
         }
     }
@@ -317,178 +317,194 @@ object Regex {
                                 val group = firstMatch.group(i + 1)
                                 if (group == null) None
                                 else Some(group(0)) // Option[Char]
-                            case (Star(Chr), i) =>
-                                val group = firstMatch.group(i + 1)
-                                if (group == null) None
-                                else Some(StarMatch[Char](group(0))) // StarMatch[Char]
                         }))
                     }
         }.asInstanceOf[BuildPattern[GroupsTypesRepr]]
 
 
-    // val myPattern1: String => Option[Cons[String, Cons[Char, Nil.type]]] = compileRegex[Cons['(', Cons['a', Cons['s', Cons['d', Cons['f', Cons['s', Cons[')', Cons['(', Cons['a', Cons[')', Nil.type]]]]]]]]]]](Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Cons('(', Cons('a', Cons(')', Nil)))))))))))
-    // val r1: String = (myPattern1("asdfsa"): @unchecked) match {
-    //     case None => "none"
-    //     case Some(Cons(s, Cons(c, Nil))) => s
-    // }
+    val myPattern1: String => Option[Cons[String, Cons[Char, Nil.type]]] = compileRegex[Cons['(', Cons['a', Cons['s', Cons['d', Cons['f', Cons['s', Cons[')', Cons['(', Cons['a', Cons[')', Nil.type]]]]]]]]]]](Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Cons('(', Cons('a', Cons(')', Nil)))))))))))
+    val r1: String = (myPattern1("asdfsa"): @unchecked) match {
+        case None => "none"
+        case Some(Cons(s, Cons(c, Nil))) => s
+    }
 
-    // val myPattern2: String => Option[Cons[Int, Nil.type]] = compileRegex[Cons['(', Cons['1', Cons['2', Cons['3', Cons[')', Nil.type]]]]]](Cons('(', Cons('1', Cons('2', Cons('3', Cons(')', Nil))))))
-    // val r2: Int = (myPattern2("123"): @unchecked) match {
-    //     case None => -1
-    //     case Some(Cons(i, Nil)) => i
-    // }
+    val myPattern2: String => Option[Cons[Int, Nil.type]] = compileRegex[Cons['(', Cons['1', Cons['2', Cons['3', Cons[')', Nil.type]]]]]](Cons('(', Cons('1', Cons('2', Cons('3', Cons(')', Nil))))))
+    val r2: Int = (myPattern2("123"): @unchecked) match {
+        case None => -1
+        case Some(Cons(i, Nil)) => i
+    }
 
-    // val myPattern3: String => Option[Cons[Char, Nil.type]] = compileRegex[Cons['(', Cons['[', Cons['a', Cons['-', Cons['z', Cons[']', Cons[')', Nil.type]]]]]]]](Cons('(', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons(')', Nil))))))))
-    // val r3: Char = (myPattern3("f"): @unchecked) match {
-    //     case None => 'n'
-    //     case Some(Cons(c, Nil)) => c
-    // }
+    val myPattern3: String => Option[Cons[Char, Nil.type]] = compileRegex[Cons['(', Cons['[', Cons['a', Cons['-', Cons['z', Cons[']', Cons[')', Nil.type]]]]]]]](Cons('(', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons(')', Nil))))))))
+    val r3: Char = (myPattern3("f"): @unchecked) match {
+        case None => 'n'
+        case Some(Cons(c, Nil)) => c
+    }
 
-    // val myPattern4: String => Option[Cons[String, Nil.type]] = compileRegex[Cons['(', Cons['[', Cons['a', Cons['-', Cons['z', Cons[']', Cons['[', Cons['0', Cons['-', Cons['9', Cons[']', Cons[')', Nil.type]]]]]]]]]]]]](Cons('(', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons(')', Nil)))))))))))))
-    // val r4: String = (myPattern4("s0"): @unchecked) match {
-    //     case None => "none"
-    //     case Some(Cons(s, Nil)) => s
-    // }
+    val myPattern4: String => Option[Cons[String, Nil.type]] = compileRegex[Cons['(', Cons['[', Cons['a', Cons['-', Cons['z', Cons[']', Cons['[', Cons['0', Cons['-', Cons['9', Cons[']', Cons[')', Nil.type]]]]]]]]]]]]](Cons('(', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons(')', Nil)))))))))))))
+    val r4: String = (myPattern4("s0"): @unchecked) match {
+        case None => "none"
+        case Some(Cons(s, Nil)) => s
+    }
 
-    // val myPattern5: String => Option[Cons[String, Nil.type]] = compileRegex[Cons['(', Cons['a', Cons['[', Cons['a', Cons['-', Cons['b', Cons[']', Cons['0', Cons['[', Cons['8', Cons['-', Cons['9', Cons[']', Cons[')', Nil.type]]]]]]]]]]]]]]](Cons('(', Cons('a', Cons('[', Cons('a', Cons('-', Cons('b', Cons(']', Cons('0', Cons('[', Cons('8', Cons('-', Cons('9', Cons(']', Cons(')', Nil)))))))))))))))
-    // val r5: String = (myPattern5("ab09"): @unchecked) match {
-    //     case None => "none"
-    //     case Some(Cons(s, Nil)) => s
-    // }
+    val myPattern5: String => Option[Cons[String, Nil.type]] = compileRegex[Cons['(', Cons['a', Cons['[', Cons['a', Cons['-', Cons['b', Cons[']', Cons['0', Cons['[', Cons['8', Cons['-', Cons['9', Cons[']', Cons[')', Nil.type]]]]]]]]]]]]]]](Cons('(', Cons('a', Cons('[', Cons('a', Cons('-', Cons('b', Cons(']', Cons('0', Cons('[', Cons('8', Cons('-', Cons('9', Cons(']', Cons(')', Nil)))))))))))))))
+    val r5: String = (myPattern5("ab09"): @unchecked) match {
+        case None => "none"
+        case Some(Cons(s, Nil)) => s
+    }
 
-    // val myPattern6: String => Option[Cons[Option[String], Cons[Char, Nil.type]]] = compileRegex[Cons['(', Cons['a', Cons['b', Cons[')', Cons['?', Cons['(', Cons['c', Cons[')', Nil.type]]]]]]]]](Cons('(', Cons('a', Cons('b', Cons(')', Cons('?', Cons('(', Cons('c', Cons(')', Nil)))))))))
-    // val r6: (String, Char) = (myPattern6("abc"): @unchecked) match {
-    //     case None => ("none", 'n')
-    //     case Some(Cons(s, Cons(c, Nil))) => {
-    //         if (s.isEmpty) ("none", c)
-    //         else (s.get, c)
-    //     }
-    // }
+    val myPattern6: String => Option[Cons[Option[String], Cons[Char, Nil.type]]] = compileRegex[Cons['(', Cons['a', Cons['b', Cons[')', Cons['?', Cons['(', Cons['c', Cons[')', Nil.type]]]]]]]]](Cons('(', Cons('a', Cons('b', Cons(')', Cons('?', Cons('(', Cons('c', Cons(')', Nil)))))))))
+    val r6: (String, Char) = (myPattern6("abc"): @unchecked) match {
+        case None => ("none", 'n')
+        case Some(Cons(s, Cons(c, Nil))) => {
+            if (s.isEmpty) ("none", c)
+            else (s.get, c)
+        }
+    }
 
-    // val myPattern7: String => Option[Cons[Option[StarMatch[String]], Cons[Char, Nil.type]]] = compileRegex[Cons['(', Cons['a', Cons['b', Cons[')', Cons['*', Cons['(', Cons['c', Cons[')', Nil.type]]]]]]]]](Cons('(', Cons('a', Cons('b', Cons(')', Cons('*', Cons('(', Cons('c', Cons(')', Nil)))))))))
-    // val r7: (StarMatch[String], Char) = (myPattern7("ababc"): @unchecked) match {
-    //     case None => (StarMatch("None"), 'n')
-    //     case Some(Cons(s, Cons(c, Nil))) => {
-    //         if (s.isEmpty) (StarMatch("None"), c)
-    //         else (s.get, c)
-    //     }
-    // }
+    val myPattern7: String => Option[Cons[Option[StarMatch[String]], Cons[Char, Nil.type]]] = compileRegex[Cons['(', Cons['a', Cons['b', Cons[')', Cons['*', Cons['(', Cons['c', Cons[')', Nil.type]]]]]]]]](Cons('(', Cons('a', Cons('b', Cons(')', Cons('*', Cons('(', Cons('c', Cons(')', Nil)))))))))
+    val r7: (StarMatch[String], Char) = (myPattern7("ababc"): @unchecked) match {
+        case None => (StarMatch("None"), 'n')
+        case Some(Cons(s, Cons(c, Nil))) => {
+            if (s.isEmpty) (StarMatch("None"), c)
+            else (s.get, c)
+        }
+    }
 
-    // val myPattern8: String => Option[Cons[Option[StarMatch[Int]], Cons[Char, Nil.type]]] = compileRegex[Cons['(', Cons['1', Cons['2', Cons[')', Cons['*', Cons['(', Cons['c', Cons[')', Nil.type]]]]]]]]](Cons('(', Cons('1', Cons('2', Cons(')', Cons('*', Cons('(', Cons('c', Cons(')', Nil)))))))))
-    // val r8: (StarMatch[Int], Char) = (myPattern8("12121212c"): @unchecked) match {
-    //     case None => (StarMatch(0), 'n')
-    //     case Some(Cons(s, Cons(c, Nil))) => {
-    //         if (s.isEmpty) (StarMatch(0), c)
-    //         else (s.get, c)
-    //     }
-    // }
+    val myPattern8: String => Option[Cons[Option[StarMatch[Int]], Cons[Char, Nil.type]]] = compileRegex[Cons['(', Cons['1', Cons['2', Cons[')', Cons['*', Cons['(', Cons['c', Cons[')', Nil.type]]]]]]]]](Cons('(', Cons('1', Cons('2', Cons(')', Cons('*', Cons('(', Cons('c', Cons(')', Nil)))))))))
+    val r8: (StarMatch[Int], Char) = (myPattern8("12121212c"): @unchecked) match {
+        case None => (StarMatch(0), 'n')
+        case Some(Cons(s, Cons(c, Nil))) => {
+            if (s.isEmpty) (StarMatch(0), c)
+            else (s.get, c)
+        }
+    }
 
-    // val myPattern9: String => Option[Cons[Int, Cons[Option[StarMatch[Char]], Nil.type]]] = compileRegex[Cons['(', Cons['1', Cons['2', Cons[')', Cons['(', Cons['c', Cons[')', Cons['*', Nil.type]]]]]]]]](Cons('(', Cons('1', Cons('2', Cons(')', Cons('(', Cons('c', Cons(')', Cons('*', Nil)))))))))
-    // val r9: (Int, StarMatch[Char]) = (myPattern9("12ccc"): @unchecked) match {
-    //     case None => (0, StarMatch('n'))
-    //     case Some(Cons(s, Cons(c, Nil))) => {
-    //         if (c.isEmpty) (0, StarMatch('n'))
-    //         else (s, c.get)
-    //     }
-    // }
+    val myPattern9: String => Option[Cons[Int, Cons[Option[StarMatch[String]], Nil.type]]] = compileRegex[Cons['(', Cons['1', Cons['2', Cons[')', Cons['(', Cons['c', Cons[')', Cons['*', Nil.type]]]]]]]]](Cons('(', Cons('1', Cons('2', Cons(')', Cons('(', Cons('c', Cons(')', Cons('*', Nil)))))))))
+    val r9: (Int, StarMatch[String]) = (myPattern9("12ccc"): @unchecked) match {
+        case None => (0, StarMatch("None"))
+        case Some(Cons(s, Cons(c, Nil))) => {
+            if (c.isEmpty) (0, StarMatch("None"))
+            else (s, c.get)
+        }
+    }
 
-    // val myPattern10: String => Option[Cons[Option[StarMatch[String]], Nil.type]] = compileRegex[Cons['(', Cons['[', Cons['a', Cons['-', Cons['z', Cons[']', Cons['*', Cons[')', Nil.type]]]]]]]]](Cons('(', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons('*', Cons(')', Nil)))))))))
-    // val r10: StarMatch[String] = (myPattern10("abc"): @unchecked) match {
-    //     case None => StarMatch("none")
-    //     case Some(Cons(s, Nil)) => {
-    //         if (s.isEmpty) StarMatch("empty")
-    //         else s.get
-    //     }
-    // }
+    val myPattern10: String => Option[Cons[Option[StarMatch[String]], Nil.type]] = compileRegex[Cons['(', Cons['[', Cons['a', Cons['-', Cons['z', Cons[']', Cons['*', Cons[')', Nil.type]]]]]]]]](Cons('(', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons('*', Cons(')', Nil)))))))))
+    val r10: StarMatch[String] = (myPattern10("abc"): @unchecked) match {
+        case None => StarMatch("none")
+        case Some(Cons(s, Nil)) => {
+            if (s.isEmpty) StarMatch("empty")
+            else s.get
+        }
+    }
 
-    // val myPattern11: String => Option[Cons[Option[StarMatch[Int]], Nil.type]] = compileRegex[Cons['(', Cons['[', Cons['0', Cons['-', Cons['9', Cons[']', Cons['*', Cons[')', Nil.type]]]]]]]]](Cons('(', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('*', Cons(')', Nil)))))))))
-    // val r11: StarMatch[Int] = (myPattern11("123"): @unchecked) match {
-    //     case None => StarMatch(0)
-    //     case Some(Cons(s, Nil)) => {
-    //         if (s.isEmpty) StarMatch(0)
-    //         else s.get
-    //     }
-    // }
+    val myPattern11: String => Option[Cons[Option[StarMatch[Int]], Nil.type]] = compileRegex[Cons['(', Cons['[', Cons['0', Cons['-', Cons['9', Cons[']', Cons['*', Cons[')', Nil.type]]]]]]]]](Cons('(', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('*', Cons(')', Nil)))))))))
+    val r11: StarMatch[Int] = (myPattern11("123"): @unchecked) match {
+        case None => StarMatch(0)
+        case Some(Cons(s, Nil)) => {
+            if (s.isEmpty) StarMatch(0)
+            else s.get
+        }
+    }
 
-    // val myPattern12: String => Option[Cons[Int, Nil.type]] = compileRegex[Cons['(', Cons['[', Cons['0', Cons['-', Cons['9', Cons[']', Cons['?', Cons['1', Cons[')', Nil.type]]]]]]]]]](Cons('(', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('?', Cons('1', Cons(')', Nil))))))))))
-    // val r12: Int = (myPattern12("1"): @unchecked) match {
-    //     case None => 0
-    //     case Some(Cons(s, Nil)) => s
-    // }
+    val myPattern12: String => Option[Cons[Int, Nil.type]] = compileRegex[Cons['(', Cons['[', Cons['0', Cons['-', Cons['9', Cons[']', Cons['?', Cons['1', Cons[')', Nil.type]]]]]]]]]](Cons('(', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('?', Cons('1', Cons(')', Nil))))))))))
+    val r12: Int = (myPattern12("1"): @unchecked) match {
+        case None => 0
+        case Some(Cons(s, Nil)) => s
+    }
 
-    // def main(args: Array[String]): Unit = {
-    //     assert(r1 == "asdfs", s"Found $r1, expected asdfs")
-    //     assert(r2 == 123, s"Found $r2, expected 123")
-    //     assert(r3 == 'f', s"Found $r3, expected f")
-    //     assert(r4 == "s0", s"Found $r4, expected s0")
-    //     assert(r5 == "ab09", s"Found $r5, expected ab09")
-    //     assert(r6 == ("ab", 'c'), s"Found $r6, expected (ab, c)")
-    //     assert(r7 == (StarMatch("ab"), 'c'), s"Found $r7, expected (StarMatch(ab), c)")
-    //     assert(r8 == (StarMatch(12), 'c'), s"Found $r8, expected (StarMatch(12), c)")
-    //     assert(r9 == (12, StarMatch('c')), s"Found $r9, expected (12, StarMatch(c))")
-    //     assert(r10 == StarMatch("abc"), s"Found $r10, expected StarMatch(abc)")
-    //     assert(r11 == StarMatch(123), s"Found $r11, expected StarMatch(123)")
-    //     assert(r12 == 1, s"Found $r12, expected 1")
-    // }
+    def main(args: Array[String]): Unit = {
+        assert(r1 == "asdfs", s"Found $r1, expected asdfs")
+        assert(r2 == 123, s"Found $r2, expected 123")
+        assert(r3 == 'f', s"Found $r3, expected f")
+        assert(r4 == "s0", s"Found $r4, expected s0")
+        assert(r5 == "ab09", s"Found $r5, expected ab09")
+        assert(r6 == ("ab", 'c'), s"Found $r6, expected (ab, c)")
+        assert(r7 == (StarMatch("ab"), 'c'), s"Found $r7, expected (StarMatch(ab), c)")
+        assert(r8 == (StarMatch(12), 'c'), s"Found $r8, expected (StarMatch(12), c)")
+        assert(r9 == (12, StarMatch("c")), s"Found $r9, expected (12, StarMatch(c))")
+        assert(r10 == StarMatch("abc"), s"Found $r10, expected StarMatch(abc)")
+        assert(r11 == StarMatch(123), s"Found $r11, expected StarMatch(123)")
+        assert(r12 == 1, s"Found $r12, expected 1")
+    }
 }
 
-// object RegexTests {
-//     import Lst._
-//     import Regex._
+object RegexTests {
+    import Lst._
+    import Regex._
 
-//     val y1: RegexError.type = compileRegex[Cons['(', Nil.type]](Cons('(', Nil))
-//     val y2: RegexError.type = compileRegex[Cons['(', Cons['[', Cons[')', Nil.type]]]](Cons('(', Cons('[', Cons(')', Nil))))
+    val y1: RegexError.type = compileRegex[Cons['(', Nil.type]](Cons('(', Nil))
+    val y2: RegexError.type = compileRegex[Cons['(', Cons['[', Cons[')', Nil.type]]]](Cons('(', Cons('[', Cons(')', Nil))))
 
-//     val x1: String => Option[Cons[String, Nil.type]] = compileRegex[Cons['(', Cons['a', Cons['s', Cons['d', Cons['f', Cons['s', Cons[')', Nil.type]]]]]]]](Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Nil))))))))
-//     val x2: String => Option[Cons[Char, Nil.type]] = compileRegex[Cons['(', Cons['a', Cons[')', Nil.type]]]](Cons('(', Cons('a', Cons(')', Nil))))
-//     val x3: String => Option[Cons[Int, Nil.type]] = compileRegex[Cons['(', Cons['1', Cons['2', Cons['3', Cons[')', Nil.type]]]]]](Cons('(', Cons('1', Cons('2', Cons('3', Cons(')', Nil))))))
-//     val x4: String => Option[Cons[String, Nil.type]] = compileRegex[Cons['(', Cons['[', Cons['a', Cons['-', Cons['z', Cons[']', Cons['[', Cons['a', Cons['-', Cons['z', Cons[']', Cons[')', Nil.type]]]]]]]]]]]]](Cons('(', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons(')', Nil)))))))))))))
-//     val x5: String => Option[Cons[Int, Nil.type]] = compileRegex[Cons['(', Cons['[', Cons['0', Cons['-', Cons['9', Cons[']', Cons['[', Cons['0', Cons['-', Cons['9', Cons[']', Cons[')', Nil.type]]]]]]]]]]]]](Cons('(', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons(')', Nil)))))))))))))
-//     val x6: String => Option[Cons[Int, Nil.type]] = compileRegex[Cons['(', Cons['[', Cons['0', Cons['-', Cons['9', Cons[']', Cons[')', Nil.type]]]]]]]](Cons('(', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons(')', Nil))))))))
-//     val x7: String => Option[Cons[Char, Nil.type]] = compileRegex[Cons['(', Cons['[', Cons['A', Cons['-', Cons['Z', Cons[']', Cons[')', Nil.type]]]]]]]](Cons('(', Cons('[', Cons('A', Cons('-', Cons('Z', Cons(']', Cons(')', Nil))))))))
-//     val x8: String => Option[Cons[String, Cons[Char, Nil.type]]] = compileRegex[Cons['(', Cons['a', Cons['s', Cons['d', Cons['f', Cons['s', Cons[')', Cons['(', Cons['a', Cons[')', Nil.type]]]]]]]]]]](Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Cons('(', Cons('a', Cons(')', Nil)))))))))))
-//     val x9: String => Option[Cons[Int, Cons[String, Nil.type]]] = compileRegex[Cons['(', Cons['1', Cons['2', Cons['3', Cons['4', Cons['5', Cons[')', Cons['(', Cons['a', Cons['b', Cons[')', Nil.type]]]]]]]]]]]](Cons('(', Cons('1', Cons('2', Cons('3', Cons('4', Cons('5', Cons(')', Cons('(', Cons('a', Cons('b', Cons(')', Nil))))))))))))
-//     val x10: String => Option[Cons[Int, Cons[Char, Nil.type]]] = compileRegex[Cons['(', Cons['[', Cons['1', Cons['-', Cons['3', Cons[']', Cons[')', Cons['(', Cons['[', Cons['a', Cons['-', Cons['z', Cons[']', Cons[')', Nil.type]]]]]]]]]]]]]]](Cons('(', Cons('[', Cons('1', Cons('-', Cons('3', Cons(']', Cons(')', Cons('(', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons(')', Nil)))))))))))))))
-//     val x11: String => Option[Cons[Int, Cons[String, Nil.type]]] = compileRegex[Cons['(', Cons['[', Cons['1', Cons['-', Cons['3', Cons[']', Cons[')', Cons['(', Cons['[', Cons['a', Cons['-', Cons['z', Cons[']', Cons['[', Cons['a', Cons['-', Cons['b', Cons[']', Cons[')', Nil.type]]]]]]]]]]]]]]]]]]]](Cons('(', Cons('[', Cons('1', Cons('-', Cons('3', Cons(']', Cons(')', Cons('(', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons('[', Cons('a', Cons('-', Cons('b', Cons(']', Cons(')', Nil))))))))))))))))))))
-//     val x12: String => Option[Cons[String, Cons[String, Nil.type]]] = compileRegex[Cons['(', Cons['a', Cons['s', Cons['d', Cons['f', Cons['s', Cons[')', Cons['(', Cons['a', Cons['b', Cons[')', Nil.type]]]]]]]]]]]](Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Cons('(', Cons('a', Cons('b', Cons(')', Nil))))))))))))
-//     val x13: String => Option[Cons[String, Cons[Char, Cons[Char, Nil.type]]]] = compileRegex[Cons['(', Cons['a', Cons['s', Cons['d', Cons['f', Cons['s', Cons[')', Cons['(', Cons['a', Cons[')', Cons['(', Cons['e', Cons[')', Nil.type]]]]]]]]]]]]]](Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Cons('(', Cons('a', Cons(')', Cons('(', Cons('e', Cons(')', Nil))))))))))))))
-//     val x14: String => Option[Cons[Option[String], Cons[Char, Nil.type]]] = compileRegex[Cons['(', Cons['a', Cons['b', Cons[')', Cons['?', Cons['(', Cons['c', Cons[')', Nil.type]]]]]]]]](Cons('(', Cons('a', Cons('b', Cons(')', Cons('?', Cons('(', Cons('c', Cons(')', Nil)))))))))
-//     val x15: String => Option[Cons[Option[Char], Cons[Char, Nil.type]]] = compileRegex[Cons['(', Cons['a', Cons[')', Cons['?', Cons['(', Cons['c', Cons[')', Nil.type]]]]]]]](Cons('(', Cons('a', Cons(')', Cons('?', Cons('(', Cons('c', Cons(')', Nil))))))))
-//     val x16: String => Option[Cons[Option[Int], Cons[Char, Nil.type]]] = compileRegex[Cons['(', Cons['1', Cons[')', Cons['?', Cons['(', Cons['c', Cons[')', Nil.type]]]]]]]](Cons('(', Cons('1', Cons(')', Cons('?', Cons('(', Cons('c', Cons(')', Nil))))))))
-//     val x17: String => Option[Cons[Option[Int], Cons[Option[Char], Nil.type]]] = compileRegex[Cons['(', Cons['1', Cons[')', Cons['?', Cons['(', Cons['c', Cons[')', Cons['?', Nil.type]]]]]]]]](Cons('(', Cons('1', Cons(')', Cons('?', Cons('(', Cons('c', Cons(')', Cons('?', Nil)))))))))
-//     val x18: String => Option[Cons[Option[StarMatch[String]], Cons[Char, Nil.type]]] = compileRegex[Cons['(', Cons['a', Cons['b', Cons[')', Cons['*', Cons['(', Cons['c', Cons[')', Nil.type]]]]]]]]](Cons('(', Cons('a', Cons('b', Cons(')', Cons('*', Cons('(', Cons('c', Cons(')', Nil)))))))))
-//     val x19: String => Option[Cons[Option[StarMatch[Char]], Cons[Char, Nil.type]]] = compileRegex[Cons['(', Cons['a', Cons[')', Cons['*', Cons['(', Cons['c', Cons[')', Nil.type]]]]]]]](Cons('(', Cons('a', Cons(')', Cons('*', Cons('(', Cons('c', Cons(')', Nil))))))))
-//     val x20: String => Option[Cons[Option[StarMatch[Int]], Cons[Char, Nil.type]]] = compileRegex[Cons['(', Cons['1', Cons[')', Cons['*', Cons['(', Cons['c', Cons[')', Nil.type]]]]]]]](Cons('(', Cons('1', Cons(')', Cons('*', Cons('(', Cons('c', Cons(')', Nil))))))))
-//     val x21: String => Option[Cons[Option[StarMatch[Int]], Cons[Option[StarMatch[Char]], Nil.type]]] = compileRegex[Cons['(', Cons['1', Cons[')', Cons['*', Cons['(', Cons['c', Cons[')', Cons['*', Nil.type]]]]]]]]](Cons('(', Cons('1', Cons(')', Cons('*', Cons('(', Cons('c', Cons(')', Cons('*', Nil)))))))))
-//     val x22: String => Option[Cons[Option[StarMatch[String]], Nil.type]] = compileRegex[Cons['(', Cons['[', Cons['a', Cons['-', Cons['z', Cons[']', Cons['*', Cons[')', Nil.type]]]]]]]]](Cons('(', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons('*', Cons(')', Nil)))))))))
-//     val x23: String => Option[Cons[Option[Char], Nil.type]] = compileRegex[Cons['(', Cons['[', Cons['a', Cons['-', Cons['z', Cons[']', Cons['?', Cons[')', Nil.type]]]]]]]]](Cons('(', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons('?', Cons(')', Nil)))))))))
-//     val x24: String => Option[Cons[Option[StarMatch[Int]], Nil.type]] = compileRegex[Cons['(', Cons['[', Cons['0', Cons['-', Cons['9', Cons[']', Cons['*', Cons[')', Nil.type]]]]]]]]](Cons('(', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('*', Cons(')', Nil)))))))))
-//     val x25: String => Option[Cons[Option[Int], Nil.type]] = compileRegex[Cons['(', Cons['[', Cons['0', Cons['-', Cons['9', Cons[']', Cons['?', Cons[')', Nil.type]]]]]]]]](Cons('(', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('?', Cons(')', Nil)))))))))
-//     val x26: String => Option[Cons[Int, Nil.type]] = compileRegex[Cons['(', Cons['[', Cons['0', Cons['-', Cons['9', Cons[']', Cons['[', Cons['0', Cons['-', Cons['9', Cons[']', Cons['?', Cons[')', Nil.type]]]]]]]]]]]]]](Cons('(', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('?', Cons(')', Nil))))))))))))))
-// }
+    val x1: String => Option[Cons[String, Nil.type]] = compileRegex[Cons['(', Cons['a', Cons['s', Cons['d', Cons['f', Cons['s', Cons[')', Nil.type]]]]]]]](Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Nil))))))))
+    val x2: String => Option[Cons[Char, Nil.type]] = compileRegex[Cons['(', Cons['a', Cons[')', Nil.type]]]](Cons('(', Cons('a', Cons(')', Nil))))
+    val x3: String => Option[Cons[Int, Nil.type]] = compileRegex[Cons['(', Cons['1', Cons['2', Cons['3', Cons[')', Nil.type]]]]]](Cons('(', Cons('1', Cons('2', Cons('3', Cons(')', Nil))))))
+    val x4: String => Option[Cons[String, Nil.type]] = compileRegex[Cons['(', Cons['[', Cons['a', Cons['-', Cons['z', Cons[']', Cons['[', Cons['a', Cons['-', Cons['z', Cons[']', Cons[')', Nil.type]]]]]]]]]]]]](Cons('(', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons(')', Nil)))))))))))))
+    val x5: String => Option[Cons[Int, Nil.type]] = compileRegex[Cons['(', Cons['[', Cons['0', Cons['-', Cons['9', Cons[']', Cons['[', Cons['0', Cons['-', Cons['9', Cons[']', Cons[')', Nil.type]]]]]]]]]]]]](Cons('(', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons(')', Nil)))))))))))))
+    val x6: String => Option[Cons[Int, Nil.type]] = compileRegex[Cons['(', Cons['[', Cons['0', Cons['-', Cons['9', Cons[']', Cons[')', Nil.type]]]]]]]](Cons('(', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons(')', Nil))))))))
+    val x7: String => Option[Cons[Char, Nil.type]] = compileRegex[Cons['(', Cons['[', Cons['A', Cons['-', Cons['Z', Cons[']', Cons[')', Nil.type]]]]]]]](Cons('(', Cons('[', Cons('A', Cons('-', Cons('Z', Cons(']', Cons(')', Nil))))))))
+    val x8: String => Option[Cons[String, Cons[Char, Nil.type]]] = compileRegex[Cons['(', Cons['a', Cons['s', Cons['d', Cons['f', Cons['s', Cons[')', Cons['(', Cons['a', Cons[')', Nil.type]]]]]]]]]]](Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Cons('(', Cons('a', Cons(')', Nil)))))))))))
+    val x9: String => Option[Cons[Int, Cons[String, Nil.type]]] = compileRegex[Cons['(', Cons['1', Cons['2', Cons['3', Cons['4', Cons['5', Cons[')', Cons['(', Cons['a', Cons['b', Cons[')', Nil.type]]]]]]]]]]]](Cons('(', Cons('1', Cons('2', Cons('3', Cons('4', Cons('5', Cons(')', Cons('(', Cons('a', Cons('b', Cons(')', Nil))))))))))))
+    val x10: String => Option[Cons[Int, Cons[Char, Nil.type]]] = compileRegex[Cons['(', Cons['[', Cons['1', Cons['-', Cons['3', Cons[']', Cons[')', Cons['(', Cons['[', Cons['a', Cons['-', Cons['z', Cons[']', Cons[')', Nil.type]]]]]]]]]]]]]]](Cons('(', Cons('[', Cons('1', Cons('-', Cons('3', Cons(']', Cons(')', Cons('(', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons(')', Nil)))))))))))))))
+    val x11: String => Option[Cons[Int, Cons[String, Nil.type]]] = compileRegex[Cons['(', Cons['[', Cons['1', Cons['-', Cons['3', Cons[']', Cons[')', Cons['(', Cons['[', Cons['a', Cons['-', Cons['z', Cons[']', Cons['[', Cons['a', Cons['-', Cons['b', Cons[']', Cons[')', Nil.type]]]]]]]]]]]]]]]]]]]](Cons('(', Cons('[', Cons('1', Cons('-', Cons('3', Cons(']', Cons(')', Cons('(', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons('[', Cons('a', Cons('-', Cons('b', Cons(']', Cons(')', Nil))))))))))))))))))))
+    val x12: String => Option[Cons[String, Cons[String, Nil.type]]] = compileRegex[Cons['(', Cons['a', Cons['s', Cons['d', Cons['f', Cons['s', Cons[')', Cons['(', Cons['a', Cons['b', Cons[')', Nil.type]]]]]]]]]]]](Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Cons('(', Cons('a', Cons('b', Cons(')', Nil))))))))))))
+    val x13: String => Option[Cons[String, Cons[Char, Cons[Char, Nil.type]]]] = compileRegex[Cons['(', Cons['a', Cons['s', Cons['d', Cons['f', Cons['s', Cons[')', Cons['(', Cons['a', Cons[')', Cons['(', Cons['e', Cons[')', Nil.type]]]]]]]]]]]]]](Cons('(', Cons('a', Cons('s', Cons('d', Cons('f', Cons('s', Cons(')', Cons('(', Cons('a', Cons(')', Cons('(', Cons('e', Cons(')', Nil))))))))))))))
+    val x14: String => Option[Cons[Option[String], Cons[Char, Nil.type]]] = compileRegex[Cons['(', Cons['a', Cons['b', Cons[')', Cons['?', Cons['(', Cons['c', Cons[')', Nil.type]]]]]]]]](Cons('(', Cons('a', Cons('b', Cons(')', Cons('?', Cons('(', Cons('c', Cons(')', Nil)))))))))
+    val x15: String => Option[Cons[Option[Char], Cons[Char, Nil.type]]] = compileRegex[Cons['(', Cons['a', Cons[')', Cons['?', Cons['(', Cons['c', Cons[')', Nil.type]]]]]]]](Cons('(', Cons('a', Cons(')', Cons('?', Cons('(', Cons('c', Cons(')', Nil))))))))
+    val x16: String => Option[Cons[Option[Int], Cons[Char, Nil.type]]] = compileRegex[Cons['(', Cons['1', Cons[')', Cons['?', Cons['(', Cons['c', Cons[')', Nil.type]]]]]]]](Cons('(', Cons('1', Cons(')', Cons('?', Cons('(', Cons('c', Cons(')', Nil))))))))
+    val x17: String => Option[Cons[Option[Int], Cons[Option[Char], Nil.type]]] = compileRegex[Cons['(', Cons['1', Cons[')', Cons['?', Cons['(', Cons['c', Cons[')', Cons['?', Nil.type]]]]]]]]](Cons('(', Cons('1', Cons(')', Cons('?', Cons('(', Cons('c', Cons(')', Cons('?', Nil)))))))))
+    val x18: String => Option[Cons[Option[StarMatch[String]], Cons[Char, Nil.type]]] = compileRegex[Cons['(', Cons['a', Cons['b', Cons[')', Cons['*', Cons['(', Cons['c', Cons[')', Nil.type]]]]]]]]](Cons('(', Cons('a', Cons('b', Cons(')', Cons('*', Cons('(', Cons('c', Cons(')', Nil)))))))))
+    val x19: String => Option[Cons[Option[StarMatch[String]], Cons[Char, Nil.type]]] = compileRegex[Cons['(', Cons['a', Cons[')', Cons['*', Cons['(', Cons['c', Cons[')', Nil.type]]]]]]]](Cons('(', Cons('a', Cons(')', Cons('*', Cons('(', Cons('c', Cons(')', Nil))))))))
+    val x20: String => Option[Cons[Option[StarMatch[Int]], Cons[Char, Nil.type]]] = compileRegex[Cons['(', Cons['1', Cons[')', Cons['*', Cons['(', Cons['c', Cons[')', Nil.type]]]]]]]](Cons('(', Cons('1', Cons(')', Cons('*', Cons('(', Cons('c', Cons(')', Nil))))))))
+    val x21: String => Option[Cons[Option[StarMatch[Int]], Cons[Option[StarMatch[String]], Nil.type]]] = compileRegex[Cons['(', Cons['1', Cons[')', Cons['*', Cons['(', Cons['c', Cons[')', Cons['*', Nil.type]]]]]]]]](Cons('(', Cons('1', Cons(')', Cons('*', Cons('(', Cons('c', Cons(')', Cons('*', Nil)))))))))
+    val x22: String => Option[Cons[Option[StarMatch[String]], Nil.type]] = compileRegex[Cons['(', Cons['[', Cons['a', Cons['-', Cons['z', Cons[']', Cons['*', Cons[')', Nil.type]]]]]]]]](Cons('(', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons('*', Cons(')', Nil)))))))))
+    val x23: String => Option[Cons[Option[Char], Nil.type]] = compileRegex[Cons['(', Cons['[', Cons['a', Cons['-', Cons['z', Cons[']', Cons['?', Cons[')', Nil.type]]]]]]]]](Cons('(', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons('?', Cons(')', Nil)))))))))
+    val x24: String => Option[Cons[Option[StarMatch[Int]], Nil.type]] = compileRegex[Cons['(', Cons['[', Cons['0', Cons['-', Cons['9', Cons[']', Cons['*', Cons[')', Nil.type]]]]]]]]](Cons('(', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('*', Cons(')', Nil)))))))))
+    val x25: String => Option[Cons[Option[Int], Nil.type]] = compileRegex[Cons['(', Cons['[', Cons['0', Cons['-', Cons['9', Cons[']', Cons['?', Cons[')', Nil.type]]]]]]]]](Cons('(', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('?', Cons(')', Nil)))))))))
+    val x26: String => Option[Cons[Int, Nil.type]] = compileRegex[Cons['(', Cons['[', Cons['0', Cons['-', Cons['9', Cons[']', Cons['[', Cons['0', Cons['-', Cons['9', Cons[']', Cons['?', Cons[')', Nil.type]]]]]]]]]]]]]](Cons('(', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('?', Cons(')', Nil))))))))))))))
+}
 
 // object Benchmarks {
 //     import Lst._
 //     import CheckDelimiters._
 //     import Regex._
 
+// type XS1 = Cons[...]
+// val xs1 = Cons(...)
+
+// type XS9 = Cons[...]
+// val xs9 = Cons(...)
+
+// compiler[XS](xs)
 //     val x = compileRegex[Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Cons['(', Cons['a', Cons['z', Cons[')', Nil.type]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]](Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Cons('(', Cons('a', Cons('z', Cons(')', Nil)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
 // }
 
-// object Examples {
-//     import Lst._
-//     import Regex._
+object Examples {
+    import Lst._
+    import Regex._
 
-//     //"(http[s-s]?://)?(www.)?([a-z][a-z]*)(.)([a-z][a-z][a-z]*)(/[a-z]*)*"
-//     val regexURL: String => Option[Cons[Option[String], Cons[Option[String], Cons[String, Cons[Char, Cons[String, Cons[Option[StarMatch[String]], Nil.type]]]]]]]]] = compileRegex[]()
-//     val informations: Option[Cons[Option[String], Cons[String, Cons[String, Cons[Option[StarMatch[String]], Nil.type]]]]]] = regexURL("https://www.epfl.ch/schools/ic/") match {
-//         case None => None
-//         case Some(Cons(protocol, Cons(_, Cons(hostname, Cons(_, Cons(domain, Cons(path, Cons(_, Nil)))))))) => Some(Cons(protocol, Cons(hostname, Cons(domain, Cons(path, Nil))))) // here if an optional is not present, its value is None and its type is known at compile time
-//     }
+    case class URL(protocol: Option[String], hostname: String, domain: String, path: Option[StarMatch[String]])
 
-//     val protocolName: String = informations.get.head.dropRight(3) // compile error
+    val regexURL: String => Option[Cons[Option[String], Cons[Option[String], Cons[String, Cons[Char, Cons[String, Cons[Option[StarMatch[String]], Nil.type]]]]]]] = compileRegex[Cons['(', Cons['h', Cons['t', Cons['t', Cons['p', Cons['s', Cons['?', Cons[':', Cons['/', Cons['/', Cons[')', Cons['?', Cons['(', Cons['w', Cons['w', Cons['w', Cons['.', Cons[')', Cons['?', Cons['(', Cons['[', Cons['a', Cons['-', Cons['z', Cons[']', Cons['[', Cons['a', Cons['-', Cons['z', Cons[']', Cons['*', Cons[')', Cons['(', Cons['.', Cons[')', Cons['(', Cons['[', Cons['a', Cons['-', Cons['z', Cons[']', Cons['[', Cons['a', Cons['-', Cons['z', Cons[']', Cons['[', Cons['a', Cons['-', Cons['z', Cons[']', Cons['*', Cons[')', Cons['(', Cons['/', Cons['[', Cons['a', Cons['-', Cons['z', Cons[']', Cons['*', Cons[')', Cons['*', Nil.type]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]](Cons('(', Cons('h', Cons('t', Cons('t', Cons('p', Cons('s', Cons('?', Cons(':', Cons('/', Cons('/', Cons(')', Cons('?', Cons('(', Cons('w', Cons('w', Cons('w', Cons('.', Cons(')', Cons('?', Cons('(', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons('*', Cons(')', Cons('(', Cons('.', Cons(')', Cons('(', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons('*', Cons(')', Cons('(', Cons('/', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons('*', Cons(')', Cons('*', Nil))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+    val url: Option[URL] = regexURL("https://www.epfl.ch/schools/ic/") match {
+        case Some(Cons(protocol, Cons(_, Cons(hostname, Cons(_, Cons(domain, Cons(path, _))))))) => Some(URL(protocol, hostname, domain, path)) // here if an optional is not present, its value is None and its type is known at compile time
+        case _ => None
+    }
 
-//     Total time: 228 s, completed May 9, 2019 7:33:37 PM
-//     //(Total time: )([0-9][0-9]*)( s, completed )([a-z][a-z]*)( )([0-9][0-9]?)(, )([0-9][0-9][0-9][0-9])( )([0-9][0-9]?)(:)([0-9][0-9])(:)([0-9][0-9])( )([a-z][a-z])
-//     //val regexCompilationResult = compileRegex()
-// }
+    val protocolName: String = extractProtocolName(url)
+
+    def extractProtocolName(url: Option[URL]): String = url match {
+        case Some(URL(prot, _, _, _)) => prot match {
+        case Some(s) => s.dropRight(3)
+        case _ => "No protocol"
+        }
+        case _ => "No URL"
+    }
+
+    //---------------------------------------------------------------------------------
+
+    val regexCompilationResult: String => Option[Cons[String, Cons[Int, Cons[String, Cons[String, Cons[Char, Cons[Int, Cons[String, Cons[Int, Cons[Char, Cons[Int, Cons[Char, Cons[Int, Cons[Char, Cons[Int, Cons[Char, Cons[String, Nil.type]]]]]]]]]]]]]]]]] = compileRegex[Cons['(', Cons['T', Cons['o', Cons['t', Cons['a', Cons['l', Cons[' ', Cons['t', Cons['i', Cons['m', Cons['e', Cons[':', Cons[' ', Cons[')', Cons['(', Cons['[', Cons['0', Cons['-', Cons['9', Cons[']', Cons['[', Cons['0', Cons['-', Cons['9', Cons[']', Cons['*', Cons[')', Cons['(', Cons[' ', Cons['s', Cons[',', Cons[' ', Cons['c', Cons['o', Cons['m', Cons['p', Cons['l', Cons['e', Cons['t', Cons['e', Cons['d', Cons[' ', Cons[')', Cons['(', Cons['[', Cons['A', Cons['-', Cons['Z', Cons[']', Cons['[', Cons['a', Cons['-', Cons['z', Cons[']', Cons['*', Cons[')', Cons['(', Cons[' ', Cons[')', Cons['(', Cons['[', Cons['0', Cons['-', Cons['9', Cons[']', Cons['[', Cons['0', Cons['-', Cons['9', Cons[']', Cons['?', Cons[')', Cons['(', Cons[',', Cons[' ', Cons[')', Cons['(', Cons['[', Cons['0', Cons['-', Cons['9', Cons[']', Cons['[', Cons['0', Cons['-', Cons['9', Cons[']', Cons['[', Cons['0', Cons['-', Cons['9', Cons[']', Cons['[', Cons['0', Cons['-', Cons['9', Cons[']', Cons[')', Cons['(', Cons[' ', Cons[')', Cons['(', Cons['[', Cons['0', Cons['-', Cons['9', Cons[']', Cons['[', Cons['0', Cons['-', Cons['9', Cons[']', Cons['?', Cons[')', Cons['(', Cons[':', Cons[')', Cons['(', Cons['[', Cons['0', Cons['-', Cons['9', Cons[']', Cons['[', Cons['0', Cons['-', Cons['9', Cons[']', Cons[')', Cons['(', Cons[':', Cons[')', Cons['(', Cons['[', Cons['0', Cons['-', Cons['9', Cons[']', Cons['[', Cons['0', Cons['-', Cons['9', Cons[']', Cons[')', Cons['(', Cons[' ', Cons[')', Cons['(', Cons['[', Cons['A', Cons['-', Cons['Z', Cons[']', Cons['[', Cons['A', Cons['-', Cons['Z', Cons[']', Cons[')', Nil.type]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]](Cons('(', Cons('T', Cons('o', Cons('t', Cons('a', Cons('l', Cons(' ', Cons('t', Cons('i', Cons('m', Cons('e', Cons(':', Cons(' ', Cons(')', Cons('(', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('*', Cons(')', Cons('(', Cons(' ', Cons('s', Cons(',', Cons(' ', Cons('c', Cons('o', Cons('m', Cons('p', Cons('l', Cons('e', Cons('t', Cons('e', Cons('d', Cons(' ', Cons(')', Cons('(', Cons('[', Cons('A', Cons('-', Cons('Z', Cons(']', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons('*', Cons(')', Cons('(', Cons(' ', Cons(')', Cons('(', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('?', Cons(')', Cons('(', Cons(',', Cons(' ', Cons(')', Cons('(', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons(')', Cons('(', Cons(' ', Cons(')', Cons('(', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('?', Cons(')', Cons('(', Cons(':', Cons(')', Cons('(', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons(')', Cons('(', Cons(':', Cons(')', Cons('(', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons(')', Cons('(', Cons(' ', Cons(')', Cons('(', Cons('[', Cons('A', Cons('-', Cons('Z', Cons(']', Cons('[', Cons('A', Cons('-', Cons('Z', Cons(']', Cons(')', Nil))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+    val compilationTime: Int = regexCompilationResult("Total time: 228 s, completed May 9, 2019 7:33:37 PM") match {
+        case Some(Cons(_, Cons(time, _))) => time // completely safe
+        case _ => -1
+    }
+}
