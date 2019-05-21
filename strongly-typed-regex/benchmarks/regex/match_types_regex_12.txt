@@ -1,0 +1,283 @@
+[0m[[0m[0minfo[0m] [0m[0mLoading settings for project dotty-build-build from build.sbt ...[0m
+[0m[[0m[0minfo[0m] [0m[0mLoading project definition from /Users/avenezia/dotty/project/project[0m
+[0m[[0m[0minfo[0m] [0m[0mLoading settings for project dotty-build from plugins.sbt,build.sbt ...[0m
+[0m[[0m[0minfo[0m] [0m[0mLoading project definition from /Users/avenezia/dotty/project[0m
+[0m[[0m[0minfo[0m] [0m[0mLoading settings for project dotty from build.sbt ...[0m
+[0m[[0m[0minfo[0m] [0m[0mLoading settings for project dotty-semanticdb-input from build.sbt ...[0m
+[0m[[0m[0minfo[0m] [0m[0mResolving key references (14593 settings) ...[0m
+[0m[[0m[0minfo[0m] [0m[0mSet current project to dotty (in build file:/Users/avenezia/dotty/)[0m
+[0m[[0m[33mwarn[0m] [0m[0mMultiple main classes detected.  Run 'show discoveredMainClasses' to see the list[0m
+[0m[[0m[33mwarn[0m] [0m[0mMultiple main classes detected.  Run 'show discoveredMainClasses' to see the list[0m
+[0m[[0m[0minfo[0m] [0m[0mRunning (fork) dotty.tools.benchmarks.Bench 40 40 3 strongly-typed-regex/MatchRegex.scala[0m
+# JMH version: 1.19
+# VM version: JDK 1.8.0_131, VM 25.131-b11
+# VM invoker: /Library/Java/JavaVirtualMachines/jdk1.8.0_131.jdk/Contents/Home/jre/bin/java
+# VM options: -Xms2G -Xmx2G -Xss16m
+# Warmup: 40 iterations, 1 s each
+# Measurement: 40 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: dotty.tools.benchmarks.Worker.compile
+
+# Run progress: 0.00% complete, ETA 00:04:00
+# Fork: 1 of 3
+# Warmup Iteration   1: 8600.538 ms/op
+# Warmup Iteration   2: 3702.556 ms/op
+# Warmup Iteration   3: 3759.625 ms/op
+# Warmup Iteration   4: 2187.771 ms/op
+# Warmup Iteration   5: 2217.839 ms/op
+# Warmup Iteration   6: 2021.729 ms/op
+# Warmup Iteration   7: 1842.270 ms/op
+# Warmup Iteration   8: 1742.874 ms/op
+# Warmup Iteration   9: 1927.250 ms/op
+# Warmup Iteration  10: 1714.861 ms/op
+# Warmup Iteration  11: 1753.458 ms/op
+# Warmup Iteration  12: 1688.106 ms/op
+# Warmup Iteration  13: 1581.024 ms/op
+# Warmup Iteration  14: 1580.077 ms/op
+# Warmup Iteration  15: 1638.675 ms/op
+# Warmup Iteration  16: 1770.774 ms/op
+# Warmup Iteration  17: 1720.091 ms/op
+# Warmup Iteration  18: 1826.484 ms/op
+# Warmup Iteration  19: 1573.636 ms/op
+# Warmup Iteration  20: 1554.561 ms/op
+# Warmup Iteration  21: 1517.000 ms/op
+# Warmup Iteration  22: 1492.878 ms/op
+# Warmup Iteration  23: 1471.704 ms/op
+# Warmup Iteration  24: 1486.538 ms/op
+# Warmup Iteration  25: 1458.797 ms/op
+# Warmup Iteration  26: 1520.554 ms/op
+# Warmup Iteration  27: 1455.069 ms/op
+# Warmup Iteration  28: 1509.673 ms/op
+# Warmup Iteration  29: 1463.246 ms/op
+# Warmup Iteration  30: 1506.034 ms/op
+# Warmup Iteration  31: 1549.804 ms/op
+# Warmup Iteration  32: 1613.940 ms/op
+# Warmup Iteration  33: 1511.060 ms/op
+# Warmup Iteration  34: 1499.533 ms/op
+# Warmup Iteration  35: 1504.742 ms/op
+# Warmup Iteration  36: 1501.180 ms/op
+# Warmup Iteration  37: 1504.707 ms/op
+# Warmup Iteration  38: 1447.180 ms/op
+# Warmup Iteration  39: 1422.270 ms/op
+# Warmup Iteration  40: 1409.298 ms/op
+Iteration   1: 1363.950 ms/op
+Iteration   2: 1400.806 ms/op
+Iteration   3: 1411.902 ms/op
+Iteration   4: 1444.530 ms/op
+Iteration   5: 1416.255 ms/op
+Iteration   6: 1445.361 ms/op
+Iteration   7: 1328.648 ms/op
+Iteration   8: 1412.309 ms/op
+Iteration   9: 1309.327 ms/op
+Iteration  10: 1320.607 ms/op
+Iteration  11: 1410.347 ms/op
+Iteration  12: 1402.451 ms/op
+Iteration  13: 1413.134 ms/op
+Iteration  14: 1401.301 ms/op
+Iteration  15: 1410.441 ms/op
+Iteration  16: 2018.284 ms/op
+Iteration  17: 1804.316 ms/op
+Iteration  18: 1366.998 ms/op
+Iteration  19: 1455.094 ms/op
+Iteration  20: 1354.962 ms/op
+Iteration  21: 1398.427 ms/op
+Iteration  22: 1396.401 ms/op
+Iteration  23: 1629.385 ms/op
+Iteration  24: 1442.513 ms/op
+Iteration  25: 1481.881 ms/op
+Iteration  26: 1342.661 ms/op
+Iteration  27: 1278.666 ms/op
+Iteration  28: 1284.820 ms/op
+Iteration  29: 1398.931 ms/op
+Iteration  30: 1430.892 ms/op
+Iteration  31: 1421.968 ms/op
+Iteration  32: 1337.064 ms/op
+Iteration  33: 1373.389 ms/op
+Iteration  34: 1299.716 ms/op
+Iteration  35: 1319.686 ms/op
+Iteration  36: 1350.094 ms/op
+Iteration  37: 1299.789 ms/op
+Iteration  38: 1311.211 ms/op
+Iteration  39: 1313.036 ms/op
+Iteration  40: 1312.128 ms/op
+
+# Run progress: 33.33% complete, ETA 00:04:27
+# Fork: 2 of 3
+# Warmup Iteration   1: 8287.220 ms/op
+# Warmup Iteration   2: 3294.903 ms/op
+# Warmup Iteration   3: 3634.278 ms/op
+# Warmup Iteration   4: 2269.837 ms/op
+# Warmup Iteration   5: 2207.040 ms/op
+# Warmup Iteration   6: 2085.064 ms/op
+# Warmup Iteration   7: 1932.446 ms/op
+# Warmup Iteration   8: 1817.237 ms/op
+# Warmup Iteration   9: 1890.818 ms/op
+# Warmup Iteration  10: 1923.129 ms/op
+# Warmup Iteration  11: 1727.403 ms/op
+# Warmup Iteration  12: 1669.130 ms/op
+# Warmup Iteration  13: 1598.761 ms/op
+# Warmup Iteration  14: 1671.171 ms/op
+# Warmup Iteration  15: 1656.816 ms/op
+# Warmup Iteration  16: 1591.513 ms/op
+# Warmup Iteration  17: 1597.009 ms/op
+# Warmup Iteration  18: 1564.477 ms/op
+# Warmup Iteration  19: 1525.107 ms/op
+# Warmup Iteration  20: 1494.949 ms/op
+# Warmup Iteration  21: 1436.690 ms/op
+# Warmup Iteration  22: 1491.711 ms/op
+# Warmup Iteration  23: 1443.555 ms/op
+# Warmup Iteration  24: 1506.164 ms/op
+# Warmup Iteration  25: 1465.182 ms/op
+# Warmup Iteration  26: 1520.616 ms/op
+# Warmup Iteration  27: 1521.369 ms/op
+# Warmup Iteration  28: 1567.254 ms/op
+# Warmup Iteration  29: 1644.289 ms/op
+# Warmup Iteration  30: 1583.002 ms/op
+# Warmup Iteration  31: 1568.506 ms/op
+# Warmup Iteration  32: 1526.541 ms/op
+# Warmup Iteration  33: 1496.675 ms/op
+# Warmup Iteration  34: 1451.908 ms/op
+# Warmup Iteration  35: 1552.036 ms/op
+# Warmup Iteration  36: 1461.446 ms/op
+# Warmup Iteration  37: 1480.127 ms/op
+# Warmup Iteration  38: 1475.869 ms/op
+# Warmup Iteration  39: 1499.354 ms/op
+# Warmup Iteration  40: 1418.689 ms/op
+Iteration   1: 1465.437 ms/op
+Iteration   2: 1524.570 ms/op
+Iteration   3: 1334.264 ms/op
+Iteration   4: 1353.906 ms/op
+Iteration   5: 1339.123 ms/op
+Iteration   6: 1366.200 ms/op
+Iteration   7: 1323.843 ms/op
+Iteration   8: 1366.936 ms/op
+Iteration   9: 1325.660 ms/op
+Iteration  10: 1288.150 ms/op
+Iteration  11: 1291.411 ms/op
+Iteration  12: 1353.086 ms/op
+Iteration  13: 1331.798 ms/op
+Iteration  14: 1333.672 ms/op
+Iteration  15: 1386.882 ms/op
+Iteration  16: 1369.665 ms/op
+Iteration  17: 1407.419 ms/op
+Iteration  18: 1428.254 ms/op
+Iteration  19: 1422.707 ms/op
+Iteration  20: 1414.677 ms/op
+Iteration  21: 1420.491 ms/op
+Iteration  22: 1423.304 ms/op
+Iteration  23: 1478.749 ms/op
+Iteration  24: 1459.233 ms/op
+Iteration  25: 1430.222 ms/op
+Iteration  26: 1404.215 ms/op
+Iteration  27: 1372.618 ms/op
+Iteration  28: 1339.461 ms/op
+Iteration  29: 1339.855 ms/op
+Iteration  30: 1372.863 ms/op
+Iteration  31: 1470.345 ms/op
+Iteration  32: 1405.377 ms/op
+Iteration  33: 1339.556 ms/op
+Iteration  34: 1311.559 ms/op
+Iteration  35: 1319.075 ms/op
+Iteration  36: 1400.484 ms/op
+Iteration  37: 1298.341 ms/op
+Iteration  38: 1300.704 ms/op
+Iteration  39: 1513.113 ms/op
+Iteration  40: 1393.303 ms/op
+
+# Run progress: 66.67% complete, ETA 00:02:12
+# Fork: 3 of 3
+# Warmup Iteration   1: 8254.863 ms/op
+# Warmup Iteration   2: 3401.900 ms/op
+# Warmup Iteration   3: 4014.879 ms/op
+# Warmup Iteration   4: 2177.475 ms/op
+# Warmup Iteration   5: 2283.813 ms/op
+# Warmup Iteration   6: 2023.912 ms/op
+# Warmup Iteration   7: 2059.952 ms/op
+# Warmup Iteration   8: 1989.409 ms/op
+# Warmup Iteration   9: 1901.935 ms/op
+# Warmup Iteration  10: 1919.788 ms/op
+# Warmup Iteration  11: 1817.203 ms/op
+# Warmup Iteration  12: 1779.538 ms/op
+# Warmup Iteration  13: 1769.807 ms/op
+# Warmup Iteration  14: 1698.876 ms/op
+# Warmup Iteration  15: 1601.472 ms/op
+# Warmup Iteration  16: 1713.852 ms/op
+# Warmup Iteration  17: 1632.668 ms/op
+# Warmup Iteration  18: 1679.126 ms/op
+# Warmup Iteration  19: 1594.523 ms/op
+# Warmup Iteration  20: 1591.603 ms/op
+# Warmup Iteration  21: 1567.178 ms/op
+# Warmup Iteration  22: 1525.664 ms/op
+# Warmup Iteration  23: 1562.745 ms/op
+# Warmup Iteration  24: 1520.903 ms/op
+# Warmup Iteration  25: 1560.580 ms/op
+# Warmup Iteration  26: 1602.886 ms/op
+# Warmup Iteration  27: 1626.497 ms/op
+# Warmup Iteration  28: 1617.326 ms/op
+# Warmup Iteration  29: 1597.078 ms/op
+# Warmup Iteration  30: 1564.440 ms/op
+# Warmup Iteration  31: 1617.497 ms/op
+# Warmup Iteration  32: 1549.799 ms/op
+# Warmup Iteration  33: 1502.622 ms/op
+# Warmup Iteration  34: 1615.374 ms/op
+# Warmup Iteration  35: 1548.624 ms/op
+# Warmup Iteration  36: 1453.839 ms/op
+# Warmup Iteration  37: 1586.834 ms/op
+# Warmup Iteration  38: 1493.527 ms/op
+# Warmup Iteration  39: 1445.830 ms/op
+# Warmup Iteration  40: 1616.222 ms/op
+Iteration   1: 1481.875 ms/op
+Iteration   2: 1527.710 ms/op
+Iteration   3: 1407.683 ms/op
+Iteration   4: 1387.066 ms/op
+Iteration   5: 1359.105 ms/op
+Iteration   6: 1404.818 ms/op
+Iteration   7: 1362.900 ms/op
+Iteration   8: 1345.898 ms/op
+Iteration   9: 1340.864 ms/op
+Iteration  10: 1389.868 ms/op
+Iteration  11: 1344.879 ms/op
+Iteration  12: 1358.188 ms/op
+Iteration  13: 1363.640 ms/op
+Iteration  14: 1380.084 ms/op
+Iteration  15: 1461.787 ms/op
+Iteration  16: 1465.027 ms/op
+Iteration  17: 1447.638 ms/op
+Iteration  18: 1454.129 ms/op
+Iteration  19: 1503.087 ms/op
+Iteration  20: 1493.904 ms/op
+Iteration  21: 1438.695 ms/op
+Iteration  22: 1439.082 ms/op
+Iteration  23: 1451.473 ms/op
+Iteration  24: 1567.728 ms/op
+Iteration  25: 1426.603 ms/op
+Iteration  26: 1356.357 ms/op
+Iteration  27: 1360.329 ms/op
+Iteration  28: 1412.028 ms/op
+Iteration  29: 1408.310 ms/op
+Iteration  30: 1415.878 ms/op
+Iteration  31: 1413.574 ms/op
+Iteration  32: 1297.814 ms/op
+Iteration  33: 1352.045 ms/op
+Iteration  34: 1299.462 ms/op
+Iteration  35: 1304.609 ms/op
+Iteration  36: 1310.082 ms/op
+Iteration  37: 1305.656 ms/op
+Iteration  38: 1310.116 ms/op
+Iteration  39: 1312.747 ms/op
+Iteration  40: 1317.602 ms/op
+
+
+Result "dotty.tools.benchmarks.Worker.compile":
+  1394.288 ±(99.9%) 29.137 ms/op [Average]
+  (min, avg, max) = (1278.666, 1394.288, 2018.284), stdev = 94.597
+  CI (99.9%): [1365.150, 1423.425] (assumes normal distribution)
+
+
+# Run complete. Total time: 00:06:40
+
+Benchmark       Mode  Cnt     Score    Error  Units
+Worker.compile  avgt  120  1394.288 ± 29.137  ms/op
+[0m[[0m[32msuccess[0m] [0m[0mTotal time: 409 s, completed May 17, 2019 2:08:44 PM[0m
