@@ -86,3 +86,4 @@ community-build/sbt-dotty-sbt
 
 regex-benchmark.sh
 strongly-typed-regex/BuildCons.scala
+strongly-typed-regex/BenchmarkScala.scala
