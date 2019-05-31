@@ -239,26 +239,11 @@ object Regex {
                             case (s) if s._1 == 'S' => firstMatch.group(s._2 + 1).toString // String
                             case (s) if s._1 == 'I' => firstMatch.group(s._2 + 1).toInt // Int
                             case (s) if s._1 == 'C' => firstMatch.group(s._2 + 1)(0) // Char
-                            case (s) if s._1 == 'T' =>
-                                val group = firstMatch.group(s._2 + 1)
-                                if (group == null) None
-                                else Some(group.toString) // Option[String]
-                            case (s) if s._1 == 'G' =>
-                                val group = firstMatch.group(s._2 + 1)
-                                if (group == null) None
-                                else Some(StarMatch[String](group.toString)) // StarMatch[String]
-                            case (s) if s._1 == 'N' =>
-                                val group = firstMatch.group(s._2 + 1)
-                                if (group == null) None
-                                else Some(group.toInt) // Option[Int]
-                            case (s) if s._1 == 'E' =>
-                                val group = firstMatch.group(s._2 + 1)
-                                if (group == null) None
-                                else Some(StarMatch[Int](group.toInt)) // StarMatch[Int]
-                            case (s) if s._1 == 'H' =>
-                                val group = firstMatch.group(s._2 + 1)
-                                if (group == null) None
-                                else Some(group(0)) // Option[Char]
+                            case (s) if s._1 == 'T' => Option(firstMatch.group(s._2 + 1).toString) // Option[String]
+                            case (s) if s._1 == 'G' => Option(StarMatch[String](firstMatch.group(s._2 + 1).toString)) // StarMatch[String]
+                            case (s) if s._1 == 'N' => Option(firstMatch.group(s._2 + 1).toInt) // Option[Int]
+                            case (s) if s._1 == 'E' => Option(StarMatch[Int](firstMatch.group(s._2 + 1).toInt)) // StarMatch[Int]
+                            case (s) if s._1 == 'H' => Option(firstMatch.group(s._2 + 1)(0)) // Option[Char]
                         }))
                     }
         }.asInstanceOf[String => Option[{ groupsTypesRepr.toLstA }]]

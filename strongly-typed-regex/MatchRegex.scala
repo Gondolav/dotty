@@ -297,26 +297,11 @@ object Regex {
                             case (Str, i) => firstMatch.group(i + 1).toString // String
                             case (Integ, i) => firstMatch.group(i + 1).toInt // Int
                             case (Chr, i) => firstMatch.group(i + 1)(0) // Char
-                            case (Optional(Str), i) =>
-                                val group = firstMatch.group(i + 1)
-                                if (group == null) None
-                                else Some(group.toString) // Option[String]
-                            case (Star(Str), i) =>
-                                val group = firstMatch.group(i + 1)
-                                if (group == null) None
-                                else Some(StarMatch[String](group.toString)) // StarMatch[String]
-                            case (Optional(Integ), i) =>
-                                val group = firstMatch.group(i + 1)
-                                if (group == null) None
-                                else Some(group.toInt) // Option[Int]
-                            case (Star(Integ), i) =>
-                                val group = firstMatch.group(i + 1)
-                                if (group == null) None
-                                else Some(StarMatch[Int](group.toInt)) // StarMatch[Int]
-                            case (Optional(Chr), i) =>
-                                val group = firstMatch.group(i + 1)
-                                if (group == null) None
-                                else Some(group(0)) // Option[Char]
+                            case (Optional(Str), i) => Option(firstMatch.group(i + 1).toString) // Option[String]
+                            case (Star(Str), i) => Option(StarMatch[String](firstMatch.group(i + 1).toString)) // StarMatch[String]
+                            case (Optional(Integ), i) => Option(firstMatch.group(i + 1).toInt) // Option[Int]
+                            case (Star(Integ), i) => Option(StarMatch[Int](firstMatch.group(i + 1).toInt)) // StarMatch[Int]
+                            case (Optional(Chr), i) => Option(firstMatch.group(i + 1)(0)) // Option[Char]
                         }))
                     }
         }.asInstanceOf[BuildPattern[GroupsTypesRepr]]
