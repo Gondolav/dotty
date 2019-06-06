@@ -390,51 +390,9 @@ object RegexTests {
     val x26: String => Option[{ ConsA(??? : Int, NilA) }] = compileRegex(Cons('(', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('?', Cons(')', Nil))))))))))))))
 }
 
-// object Benchmarks {
-//     import Lst._
-//     import CheckDelimiters._
-//     import Regex._
-
-
-//     // dependent def createLstChar(length: Int): LstChar = createLstCharAux(length, Nil)
-
-//     // dependent private def createLstCharAux(length: Int, acc: LstChar): LstChar = {
-//     //     if (length == 0) acc
-//     //     else createLstCharAux(length - 2, acc ++ Cons('(', Cons(')', Nil)))
-//     // }
-
-//     dependent def createRegex(length: Int): LstChar = createRegexAux(length, Nil)
-
-//     dependent private def createRegexAux(length: Int, acc: LstChar): LstChar = {
-//         if (length == 0) acc
-//         else createRegexAux(length - 4, acc ++ Cons('(', Cons('a', Cons('z', Cons(')', Nil)))))
-//     }
-
-//     val balanced1: true = checkParens(createRegex(192))
-// }
-
 // object Examples {
 //     import Lst._
 //     import Regex._
-
-//     case class URL(protocol: Option[String], hostname: String, domain: String, path: Option[StarMatch[String]])
-
-//     val regexURL: String => Option[{ ConsA(??? : Option[String], ConsA(??? : Option[String], ConsA(??? : String, ConsA(??? : Char, ConsA(??? : String, ConsA(??? : Option[StarMatch[String]], NilA)))))) }] = compileRegex(Cons('(', Cons('h', Cons('t', Cons('t', Cons('p', Cons('s', Cons('?', Cons(':', Cons('/', Cons('/', Cons(')', Cons('?', Cons('(', Cons('w', Cons('w', Cons('w', Cons('.', Cons(')', Cons('?', Cons('(', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons('*', Cons(')', Cons('(', Cons('.', Cons(')', Cons('(', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons('*', Cons(')', Cons('(', Cons('/', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons('*', Cons(')', Cons('*', Nil))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
-//     val url: Option[URL] = regexURL("https://www.epfl.ch/schools/ic/") map {
-//         case ConsA(protocol, ConsA(_, ConsA(hostname, ConsA(_, ConsA(domain, ConsA(path, _)))))) => URL(protocol.asInstanceOf[Option[String]], hostname.asInstanceOf[String], domain.asInstanceOf[String], path.asInstanceOf[Option[StarMatch[String]]]) // here if an optional is not present, its value is None and its type is known at compile time
-//     }
-
-//     val protocolName: String = extractProtocolName(url)
-
-//     def extractProtocolName(url: Option[URL]): String = url match {
-//         case Some(URL(prot, _, _, _)) => prot match {
-//         case Some(s) => s.dropRight(3)
-//         case _ => "No protocol"
-//         }
-//         case _ => "No URL"
-//     }
-
-//     //---------------------------------------------------------------------------------
 
 //     val regexCompilationResult: String => Option[{ ConsA(??? : String, ConsA(??? : Int, ConsA(??? : String, ConsA(??? : String, ConsA(??? : Char, ConsA(??? : Int, ConsA(??? : String, ConsA(??? : Int, ConsA(??? : Char, ConsA(??? : Int, ConsA(??? : Char, ConsA(??? : Int, ConsA(??? : Char, ConsA(??? : Int, ConsA(??? : Char, ConsA(??? : String, NilA)))))))))))))))) }] = compileRegex(Cons('(', Cons('T', Cons('o', Cons('t', Cons('a', Cons('l', Cons(' ', Cons('t', Cons('i', Cons('m', Cons('e', Cons(':', Cons(' ', Cons(')', Cons('(', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('*', Cons(')', Cons('(', Cons(' ', Cons('s', Cons(',', Cons(' ', Cons('c', Cons('o', Cons('m', Cons('p', Cons('l', Cons('e', Cons('t', Cons('e', Cons('d', Cons(' ', Cons(')', Cons('(', Cons('[', Cons('A', Cons('-', Cons('Z', Cons(']', Cons('[', Cons('a', Cons('-', Cons('z', Cons(']', Cons('*', Cons(')', Cons('(', Cons(' ', Cons(')', Cons('(', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('?', Cons(')', Cons('(', Cons(',', Cons(' ', Cons(')', Cons('(', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons(')', Cons('(', Cons(' ', Cons(')', Cons('(', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('?', Cons(')', Cons('(', Cons(':', Cons(')', Cons('(', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons(')', Cons('(', Cons(':', Cons(')', Cons('(', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons('[', Cons('0', Cons('-', Cons('9', Cons(']', Cons(')', Cons('(', Cons(' ', Cons(')', Cons('(', Cons('[', Cons('A', Cons('-', Cons('Z', Cons(']', Cons('[', Cons('A', Cons('-', Cons('Z', Cons(']', Cons(')', Nil))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
 //     val compilationTime: Option[Int] = regexCompilationResult("Total time: 228 s, completed May 9, 2019 7:33:37 PM") map {
