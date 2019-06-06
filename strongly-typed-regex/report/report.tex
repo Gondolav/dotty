@@ -1,0 +1,75 @@
+\documentclass[nocopyrightspace,11pt,preprint]{sigplanconf}
+
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{graphicx}
+\graphicspath{ {./pics/}}
+\usepackage{addlines}
+\usepackage{amsmath, amssymb, amsfonts, amsthm, fouriernc, mathtools}
+\usepackage{listings}
+\usepackage{pxfonts}
+\usepackage{float}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{microtype}
+\usepackage{multicol}
+\usepackage{blindtext}
+
+\newenvironment{changemargin}[1]{%
+\begin{list}{}{%
+\setlength{\topsep}{#1}%
+\setlength{\listparindent}{\parindent}%
+\setlength{\itemindent}{\parindent}%
+\setlength{\parsep}{\parskip}%
+}%
+\item[]}{\end{list}}
+
+\begin{document}
+\input{scala-listings}
+
+\title{Strongly-typed regular expressions in Dotty}
+\subtitle{Bachelor Semester Project Spring 2019 Final Report}
+
+\authorinfo{Andrea Veneziano}
+           {EPFL}
+           {andrea.veneziano@epfl.ch}
+
+\maketitle
+
+\begin{abstract}
+\input{abstract}   
+\end{abstract}
+
+\section{Introduction}
+\input{introduction}
+
+\section{How dependent and match types work}
+\input{examples}
+
+\onecolumn
+
+\begin{figure}[h]
+\begin{center}\includegraphics[scale=0.8]{images/structure.png}
+\end{center}
+\caption{The project structure described in Section \ref{architecture}.}
+\label{structure.png}
+\end{figure}
+
+\twocolumn
+
+\section{Implementation}\label{implementation}
+\input{implementation}
+
+\section{Use cases}
+\input{use-cases}
+
+\section{Results}
+\input{results}
+
+\section{Conclusion}
+\input{conclusion}
+
+\bibliographystyle{abbrv}
+\bibliography{bibliography.bib}
+
+\end{document}

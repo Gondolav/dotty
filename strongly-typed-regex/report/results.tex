@@ -1,0 +1,26 @@
+In this section, we compare the two methods presented in Section \ref{implementation}, using them as a basis for a more general analysis of Dotty\textquotesingle s current implementation of match and dependent types.
+
+We start by analyzing their compilation time. Then, we briefly describe our experience in developing with them. Finally, we highlight some key differences we identified.
+
+\subsection{Compile time comparison}
+
+Benchmarks suggest that, in both implementations, the additional compilation time spent doing actual type-level computation is negligible compared to the overall compilation time. Moreover, compared to the Scala standard library, our work requires slightly more time to compile.
+
+\subsection{Programming experience and ease of use}
+Both features, for several reasons, are challenging to use. There is a general lack of documentation and of meaningful error messages, that, combined with sporadic bugs, makes programming with them more difficult. However, we found that slightly changing our programming habits to use them was the hardest part; sometimes, it was difficult to even understand how to approach a certain problem. This was especially true for match types, because pattern matching was the only language construct at disposal for pure type-level programming.
+
+\subsubsection{Dependent types}
+
+Programming with dependent types, even though pattern matching is not supported, is in general more similar to usual programming and thus easier. Nevertheless, it requires dependently-typed data structures and functions, which means that the standard library cannot be used. Hence, the programmer has to write everything on his own, from scratch. 
+
+Since equality between objects is not yet understood by dependent types, we had to use Char to represent types. We were constrained in our implementation decisions also in other situations: closures defined in a dependent context do not work well (our usage of \textit{zipWithIndex()}, in the function \textit{BuildPattern()}, is an evidence) and types are not correctly inferred at run-time for the expression resulting from a regex pattern matching, and thus casts are necessary.
+
+\subsubsection{Match types}
+
+Match types are arguably harder to code with, since they compel the user to program at the type level. The resulting programs are, however, easier to read and more elegant, despite being more verbose. Their elegance, compared to the dependently-typed ones, can be appreciated because the Scala standard library and pattern matching are available for usage. 
+
+Duplicated code is the main problem with match types. The code written for a function and the corresponding type-level code are essentially the same (\textit{Compile[]} and \textit{compile()} are clear proof). Furthermore, upon function calls, as it is done for polymorphic methods, all types must be specified (including potentially long type-level regexes in our implementation) which can be tedious, error-prone and another source of code duplication.
+
+Another limitation we encountered is the impossibility to perform inequality comparisons on types. This prevents error detection in character classes when the first element is greater than the second.
+
+Finally, it is not possible to perform arithmetic operations or simple counting on integers at the type level, which led us to use type-level natural numbers instead.

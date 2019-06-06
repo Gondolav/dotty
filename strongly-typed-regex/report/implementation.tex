@@ -1,0 +1,58 @@
+In this section, we give an overview of how we used Dotty\textquotesingle s experimental functionalities, such as match types and dependent types, to improve the expressiveness of the Scala standard library for regular expressions.
+
+First, we will describe the overall architecture of our extension and the approach taken for its implementation. Then, we will present, in more details, the core of our work that uses these new features, and the algorithm behind it.
+
+\subsection{Architecture}\label{architecture}
+We applied a functional approach to our work, relying on recursion and accumulators and avoiding side effects. Since the project main goal is to provide more insight into the use of dependent and match types, we decided to implement only a subset of regular expressions, focusing on readability rather than performance. For this reason, the supported functionalities are limited to capturing groups, simple character classes of the form [a-z], Kleene star * and optional ?.
+
+The structure of the code, for both implementations, can be summarized into three modules (see Figure \ref{structure.png}): data structures for representing regexes, groups types and results (object \textit{Lst}), methods for checking preconditions and input format validity (object \textit{CheckDelimiters}) and the main interface used for compiling regular expressions (object \textit{Regex}). For the implementation involving match types, we have to add to this general structure also natural numbers (object \textit{Nat}), which are needed for type-level computations.
+
+\subsection{Algorithm}
+The bulk of the work is performed by a simple state machine, which consumes the regex one character at a time, iteratively building up the list containining the types corresponding to each group. This list and the Scala library for regular expressions are then used to construct a closure of the form \textit{String => Option[Cons(type, Cons(..., Nil)]}. This closure has complete knowledge of the regex groups\textquotesingle \space types at compile time and represents the pattern used to match the regex at run-time.
+For example, compiling the regex "[a-z]" returns a closure of type \textit{String => Option[Cons(Char, Nil)]}.
+
+\subsubsection{Dependent types}
+
+\begin{lstlisting}[style=myScalastyle, caption={Dependent types prototypes.}, captionpos=b, label={dependent:code}]
+dependent def compileRegex(regex: LstChar): Any = {
+    if (checkParens(regex)) compile(regex, Empty, 0, false, 0, Nil, regex)
+    else RegexError
+}
+
+dependent private def compile(..., groupsTypesRepr: LstChar, ...): Any = {... buildPattern(...) ... 
+      ... compileCharClass(...) ...}
+
+dependent private def compileCharClass(..., groupsTypesRepr: LstChar, ...): Any = {...}
+
+dependent private def buildPattern(..., groupsTypesRepr: LstChar): String => Option[{ groupsTypesRepr.toLstA }] = { input: String => ...}.asInstanceOf[String => Option[{ groupsTypesRepr.toLstA }]]
+\end{lstlisting}
+
+In Listing \ref{dependent:code}, dependent types are used to keep the type of the list \textit{groupsTypesRepr} as precise as possible, in such a way that it can then be used as return type without information loss in the function \textit{buildPattern()}.
+
+First, \textit{compileRegex()} checks that the regular expression is well formatted. Then, it calls \textit{compile()} which does most of the work; it keeps track of the type of the current group traversed (\textit{Empty}, \textit{Str}, \textit{Chr} or \textit{Integ}, defined as dependent case objects in object \textit{Regex}), the number of characters encountered (to distinguish between String and Char), whether a character class is present at the moment and how many are defined (to disambiguate between a group containing just a single char class, of type Char, and one containing multiple classes, of type String). The regex is cached as it is needed in \textit{buildPattern()}, where it is transformed in an actual scala.util.matching.Regex.
+
+When a character class is encountered, \textit{compile()} checks that the brackets are balanced, and then relinquishes control to \textit{compileCharClass()}. This function parses the received regex, extracting the class type and eventually detecting errors (such as "[z-a]").
+
+Finally, the function \textit{buildPattern} builds the closure to be used as pattern at run-time. Its body makes use of the Scala standard library to match the given input, and uses the information collected in \textit{groupsTypesRepr} to change the type of each group from the default one, String, to the actual, more informative type. 
+
+\subsubsection{Match types}
+
+\begin{lstlisting}[style=myScalastyle, caption={Match types prototypes.}, captionpos=b, label={match:code}]
+type CompileRegex[Input <: Lst] = CheckParens[Input] match {
+        case true => Compile[Input, Empty.type, Zero, false, Zero, Nil.type, Input]
+        case false => RegexError.type
+}
+
+type Compile[..., GroupsTypesRepr <: Lst, ...] = ... match {
+    ... BuildPattern[...] ... 
+    ... CompileCharClass[...] ...
+}
+
+type CompileCharClass[..., GroupsTypesRepr <: Lst, ...] = ...
+
+type BuildPattern[GroupsTypesRepr <: Lst] = String => Option[ToTypesList[GroupsTypesRepr]]
+\end{lstlisting}
+
+In Listing \ref{match:code}, match types are exploited in a similar way as dependent types. In fact, the actual implementation almost mirrors the dependent one, with the notable exception that actual Scala lists are used for the code executing at run-time (functions \textit{compile()}, \textit{compileCharClass()} and \textit{buildPattern()}). For this reason, we decided to highlight in this section only the type-level implementation, as it shows how match types can be used to achieve the same purpose as dependent ones with the same algorithm and few syntax changes.
+
+The types thus defined are used as return types for the functions of the same name (Figure \ref{structure.png} shows an example).

@@ -1,0 +1,92 @@
+In this section, we present the complete implementation of the methods used to check, at compile time, whether delimiters are balanced. This code, available in Listings \ref{delim-dependent} and \ref{delim-match}, gives us the opportunity to show how dependent and match types work.
+
+\subsection{Dependent types}
+Dependent types, as stated before, allow programmers to type values, methods and case classes as precisely as their implementations. In Dotty, the compiler can be instructed to do so by providing, for example, the body of a dependently-typed function inside brackets \{...\} as the explicit result type:
+
+\begin{lstlisting}[style=myScalastyle]
+// the return type is 5, more precise than
+// Int
+def digit: { 2 + 3 } = 2 + 3
+\end{lstlisting} 
+
+To avoid duplicating code, the \textbf{dependent} qualifier has been introduced; it allows the user to omit the type and let the compiler infer it:
+
+\begin{lstlisting}[style=myScalastyle]
+// the return type is still 5
+dependent def digit = 2 + 3
+\end{lstlisting} 
+
+In Listing \ref{delim-dependent}, we use \textbf{dependent} to precisely type the methods \textit{checkParens()}, \textit{checkBrackets()} and \textit{check()}, such as the actual return type is either true or false, instead of simply Boolean. This allows us to know whether delimiters in a string are balanced directly at compile time.
+
+More concretely, the auxiliary method \textit{check()} reads the string one character at a time, counting opening delimiters. Then, when a closing one is found, the function checks, through the counter, if an open delimiter to match has been already encountered. If it is not the case, then the delimiters are not balanced. They are balanced only if we finish traversing the string and the counter is equal to zero.
+
+\subsection{Match types}
+ 
+Match types can be viewed as functions on types defined through pattern matching. They reduce, depending on a scrutinee type, to one of several candidates, expressed as right hand sides:
+
+\begin{lstlisting}[style=myScalastyle]
+type IsDigit[X] = X match {
+    case 2 => true
+    case 'a' => false
+    ...
+}
+
+val digit: IsDigit[2] = true
+val character: IsDigit['a'] = false
+\end{lstlisting}
+
+The \textit{digit}\textquotesingle s type is true, since IsDigit[2] gets transformed to true, while the \textit{character}\textquotesingle s type is false.
+
+In Listing \ref{delim-match}, we use match types to specialize, based on a given string, \textit{CheckParens}, \textit{CheckBrackets} and \textit{Check}, in such a way that they evaluate to either true or false. This allows us to know whether delimiters in a string are balanced at compile time.
+
+The \textit{Check} implementation is a bit more involved than its dependent counterpart, as the counter is defined using type-level natural numbers. The logic is the same, but additional checks are needed to simplify the interactions between \textit{Pred[x]} and \textit{Suc[x]}, which represent, respectively, the predecessor and the successor of a number. Indeed, both \textit{Pred[Suc[x]]} and \textit{Suc[Pred[x]]} are equivalent to \textit{x}.
+ 
+\onecolumn 
+ 
+\begin{lstlisting}[style=myScalastyle, caption={Dependent types implementation of a delimiter balance checker.}, captionpos=b, label={delim-dependent}]
+dependent def checkParens(s: LstChar): Boolean = check(s, 0, '(', ')')
+
+dependent def checkBrackets(s: LstChar): Boolean = check(s, 0, '[', ']')
+
+dependent private def check(cs: LstChar, opened: Int, open: Char, close: Char): Boolean = 
+cs match {
+    case Nil => opened == 0
+    case open :: xs => check(xs, opened + 1, open, close)
+    case close :: xs if (opened < 1) => false
+    case close :: xs => check(xs, opened - 1, open, close)
+    case x :: xs => check(xs, opened, open, close)
+}
+
+// example: if we write "false" instead of "true", the program will not compile
+val balanced: true = checkParens(Cons('(', Cons('(', Cons(')', Cons(')', Nil)))))
+\end{lstlisting} 
+ 
+\begin{lstlisting}[style=myScalastyle, caption={Match types implementation of a delimiter balance checker.}, captionpos=b, label={delim-match}]
+type CheckParens[Input <: Lst] = Check[Input, Zero, '(', ')']
+
+type CheckBrackets[Input <: Lst] = Check[Input, Zero, '[', ']']
+
+type Check[Input <: Lst, Opened <: Nat, Open <: Char, Close <: Char] = Input match {
+    case Nil.type => Opened match {
+        case Zero => true
+        case _ => false
+    }
+    case Cons[Open, xs] => Opened match {
+        case Pred[o] => Check[xs, o, Open, Close]
+        case _ => Check[xs, Suc[Opened], Open, Close]
+    }
+    case Cons[Close, xs] => Opened match {
+        case Zero => false
+        case _ => Opened match {
+            case Suc[o] => Check[xs, o, Open, Close]
+            case _ => Check[xs, Pred[Opened], Open, Close]
+        }
+    }
+    case Cons[_, xs] => Check[xs, Opened, Open, Close]
+}
+
+// example: if we write "false" instead of "true", the program will not compile
+val balanced: CheckParens[Cons['(', Cons['(', Cons[')', Cons[')', Nil.type]]]]] = true
+\end{lstlisting}
+
+\twocolumn

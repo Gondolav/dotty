@@ -1,0 +1,74 @@
+In this section, we present two concrete examples that demonstrate the advantages of using strongly-typed, expressive regular expressions over the weakly-typed, string-based ones implemented in the Scala standard library.
+
+The examples highlight the benefits of knowing precisely the types of the capturing groups at compile time and show how it is possible to use this additional information to increase type-safety and reliability.
+
+\subsection{Matching URLs}
+
+In this use case, we first create a regular expression for matching URLs. Then, we extract the information retrieved from a match, storing it in a case class \textit{URL()}. Finally, we perform an operation on one of the fields, protocol.
+
+\subsubsection{Scala regular expressions}
+
+As illustrated in Listing \ref{URL:scala}, in the Scala standard library, if an optional expression (resulting from a *, for instance) is not present, its value will be null upon matching. Thus, assuming that it has been decided beforehand that null values will be treated as \textit{None}, the programmer has to explicitly handle this case, through cumbersome if-conditions or using the \textit{Option()} constructor. On the other hand, if the user, by accident, forgets to perform these checks, the program will fail with an exception at run-time. 
+
+\subsubsection{Regular expressions with dependent and match types}
+
+With dependent and match types (Listing \ref{URL:match}), however, if an optional expression is not present, its value is \textit{None} by default and its actual type is known at compile time. This means that the programmer does not have to perform null checks, because he is protected by the compiler\textquotesingle s type-checker. The resulting code is thus easier to write and safer to use, because errors will be caught early, at compile time.
+
+\subsection{Matching sbt compilation results}
+In this second example, we create a regular expression for matching sbt compilation results, and use it to extract the total compilation time.
+
+The code is available in Listings \ref{sbt:scala} and \ref{sbt:dependent}.
+
+\onecolumn
+
+\begin{lstlisting}[style=myScalastyle, caption={Matching URLs with Scala regex.}, captionpos=b, label={URL:scala}, basicstyle={\small\ttfamily}]
+case class URL(protocol: Option[String], hostname: String, domain: String, path: Option[String])
+
+val regexURL: Regex = "(https?://)?(www.)?([a-z][a-z]*)(.)([a-z][a-z][a-z]*)(/[a-z]*)*".r
+val url: Option[URL] = "https://www.epfl.ch/schools/ic/" match {
+    // if an optional is not present, its value is null
+    case regexURL(protocol, _, hostname, _, domain, path) => 
+        // since the Regex extractor produces varargs, the user could use the wrong group
+        Some(URL(Option(protocol), hostname, domain, Option(path))) 
+    case _ => None
+}
+// if the user forgets to do null checks, this call fails with an exception at run-time
+val protocolName: String = extractProtocolName(url) 
+\end{lstlisting}
+
+\begin{lstlisting}[style=myScalastyle, caption={Matching URLs with match types.}, captionpos=b, label={URL:match}]
+case class URL(protocol: Option[String], hostname: String, domain: String, path: Option[StarMatch[String]])
+
+val regexURL: String => Option[Cons[Option[String], Cons[Option[String], Cons[String, Cons[Char, Cons[String, Cons[Option[StarMatch[String]], Nil.type]]]]]]] = compileRegex[...](...)
+val url: Option[URL] = regexURL("https://www.epfl.ch/schools/ic/") map {
+        // if an optional is not present, its value is None and its type is known at compile time
+        case Cons(protocol, Cons(_, Cons(hostname, Cons(_, Cons(domain, Cons(path, _)))))) => URL(protocol, hostname, domain, path)
+}
+val protocolName: String = extractProtocolName(url) 
+\end{lstlisting}
+
+\begin{lstlisting}[style=myScalastyle, caption={Matching sbt compilation results with Scala regex.}, captionpos=b, label={sbt:scala}]
+val regexCompilationResult: Regex = "(Total time: )([0-9][0-9]*)( s, completed )([A-Z][a-z]*)( )([0-9][0-9]?)(, )([0-9][0-9][0-9][0-9])( )([0-9][0-9]?)(:)([0-9][0-9])(:)([0-9][0-9])( )([A-Z][A-Z])".r
+val compilationTime: Option[Int] = "Total time: 228 s, completed May 9, 2019 7:33:37 PM" match {
+    // if we call toInt on the wrong group, we get an exception at run-time
+    case regexCompilationResult(_, time, _: _*) => Some(time.toInt)
+    case _ => None
+}
+\end{lstlisting}
+
+\begin{lstlisting}[style=myScalastyle, caption={Matching sbt compilation results with dependent types.}, captionpos=b, label={sbt:dependent}]
+val regexCompilationResult: String => Option[{ ConsA(_ : String, ConsA(_ : Int, ConsA(_ : String, ConsA(_ : String, ConsA(_ : Char, ConsA(_ : Int, ConsA(_ : String, ConsA(_ : Int, ConsA(_ : Char, ConsA(_ : Int, ConsA(_ : Char, ConsA(_ : Int, ConsA(_ : Char, ConsA(_ : Int, ConsA(_ : Char, ConsA(_ : String, NilA)))))))))))))))) }] = compileRegex(...)
+val compilationTime: Option[Int] = regexCompilationResult("Total time: 228 s, completed May 9, 2019 7:33:37 PM") map {
+    case ConsA(_, ConsA(time, _)) => time // completely safe
+}
+\end{lstlisting}
+
+\twocolumn
+
+\subsubsection{Scala regular expressions}
+
+The standard library is, as stated before, weakly-typed: all values resulting from a match are represented as strings. Thus, in order to retrieve the compilation time as Int in Listing \ref{sbt:scala}, we have to call \textit{toInt()} on the expression corresponding to it. This operation is unsafe, because the programmer could use, for example, the wrong extracted group, which would lead to a run-time exception.
+
+\subsubsection{Regular expressions with dependent and match types}
+
+With our approach, there is no need to use \textit{toInt()}, because actual groups  types are computed at compile time. Hence, even if the user makes a mistake and extracts the wrong expression, the compiler will complain and catch the error.
